@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+
+body {
+  background-image: url('/background.webp');
+  /* #F3F5F2 */
+  background-color: rgba(243, 245, 242, 0.7);
+  background-blend-mode: lighten;
+  background-size: cover;
+}
