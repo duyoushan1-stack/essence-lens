@@ -7,7 +7,7 @@ export function useProposal() {
 
   const loading = computed(() => status.value === 'loading')
 
-  const generate = async (): Promise<void> => {
+  const generate = async () => {
     if (loading.value) {
       return
     }
@@ -16,7 +16,7 @@ export function useProposal() {
     error.value = null
 
     try {
-      proposal.value = await $fetch<Proposal>('/api/proposal', {
+      proposal.value = await $fetch('/api/proposal', {
         method: 'POST'
       })
       status.value = 'success'
