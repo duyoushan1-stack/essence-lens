@@ -1,9 +1,34 @@
 @import 'tailwindcss';
 
+@theme {
+  --color-page: oklch(96% 0.012 145);
+  --color-surface: oklch(100% 0 0 / 0.85);
+  --color-ink: oklch(25% 0.025 145);
+  --color-muted: oklch(48% 0.035 145);
+  --color-border: oklch(88% 0.025 145);
+  --color-accent: oklch(81% 0.105 75);
+  --color-danger: oklch(48% 0.11 35);
+}
+
+:root {
+  color-scheme: light;
+}
+
 body {
   background-image: url('/background.webp');
-  /* #F3F5F2 */
   background-color: rgba(243, 245, 242, 0.7);
   background-blend-mode: lighten;
   background-size: cover;
+  color: var(--color-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
