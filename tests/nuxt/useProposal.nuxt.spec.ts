@@ -1,22 +1,19 @@
-import { computed, readonly, ref } from 'vue'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Proposal } from '../../shared/types/proposal'
 
-const fetchMock = vi.fn()
-let useProposal: typeof import('../../app/composables/useProposal').useProposal
+const { fetchMock } = vi.hoisted(() => ({
+  fetchMock: vi.fn()
+}))
 
-beforeAll(async () => {
-  vi.stubGlobal('ref', ref)
-  vi.stubGlobal('computed', computed)
-  vi.stubGlobal('readonly', readonly)
-  vi.stubGlobal('$fetch', fetchMock)
-
-  const proposalModule = await import('../../app/composables/useProposal')
-  useProposal = proposalModule.useProposal
-})
+mockNuxtImport('$fetch', () => fetchMock)
 
 beforeEach(() => {
   fetchMock.mockReset()
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('useProposal', () => {
