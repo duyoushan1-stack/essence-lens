@@ -1,7 +1,11 @@
 export type ImageUploadStatus = 'idle' | 'validating' | 'ready' | 'error'
 
 export type ImageUploadErrorCode =
-  'empty-file' | 'unsupported-type' | 'file-too-large' | 'invalid-image'
+  | 'empty-file'
+  | 'unsupported-type'
+  | 'file-too-large'
+  | 'invalid-image'
+  | 'image-dimensions-invalid'
 
 export interface ImageDimensions {
   width: number

@@ -25,8 +25,9 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const errorMessages = {
   'empty-file': '這個檔案沒有內容，請重新選取圖片。',
   'unsupported-type': '請選擇 JPG、PNG 或 WebP 圖片。',
-  'file-too-large': '圖片需要小於 10 MB，請選擇較小的檔案。',
-  'invalid-image': '這個檔案無法讀取成圖片，請重新選取。'
+  'file-too-large': '圖片需要小於 4 MB，請選擇較小的檔案。',
+  'invalid-image': '這個檔案無法讀取成圖片，請重新選取。',
+  'image-dimensions-invalid': '圖片尺寸需介於 50×50 與 7200×7200 像素。'
 }
 
 const errorMessage = computed(() => {
@@ -71,7 +72,7 @@ const handleFileChange = (event: Event) => {
           選一張靈感圖片
         </h2>
         <p id="image-upload-help" class="mt-1 text-sm leading-6 text-muted">
-          檔案大小上限 10 MB，支援 JPG、PNG 或 WebP
+          檔案大小上限 4 MB，支援 JPG、PNG 或 WebP
         </p>
       </div>
       <span v-if="status === 'ready'" class="shrink-0 text-sm text-muted">已準備好</span>

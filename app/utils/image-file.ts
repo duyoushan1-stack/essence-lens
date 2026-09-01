@@ -1,7 +1,9 @@
 import type { ImageDimensions, ImageValidationResult } from '~~/shared/types/image-upload'
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
+const MAX_IMAGE_SIZE_BYTES = 4 * 1024 * 1024
+const MIN_IMAGE_DIMENSION = 50
+const MAX_IMAGE_DIMENSION = 4000
 
 const readImageDimensions = (previewUrl: string) =>
   new Promise<ImageDimensions>((resolve, reject) => {
@@ -37,6 +39,18 @@ export const validateImageFile = async (file: File): Promise<ImageValidationResu
 
   try {
     const dimensions = await readImageDimensions(previewUrl)
+
+    const hasValidDimensions =
+      dimensions.width >= MIN_IMAGE_DIMENSION &&
+      dimensions.height >= MIN_IMAGE_DIMENSION &&
+      dimensions.width <= MAX_IMAGE_DIMENSION &&
+      dimensions.height <= MAX_IMAGE_DIMENSION
+
+    if (!hasValidDimensions) {
+      URL.revokeObjectURL(previewUrl)
+      return { valid: false, code: 'image-dimensions-invalid' }
+    }
+
     return { valid: true, previewUrl, dimensions }
   } catch {
     URL.revokeObjectURL(previewUrl)
