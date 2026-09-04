@@ -1,6 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
-import ImagePreview from '../../app/components/image-upload/ImagePreview.vue'
+import ImagePreview from '../../app/components/image-upload/Preview.vue'
 
 describe('ImagePreview', () => {
   it('places generate beside remove in the image action row', async () => {

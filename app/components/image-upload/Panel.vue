@@ -84,7 +84,7 @@ const handleFileChange = (event: Event) => {
     >
 
     <div v-if="status === 'ready' && previewUrl && file" class="md:aspect-[4/3] min-h-72">
-      <ImagePreview
+      <ImageUploadPreview
         :preview-url="previewUrl"
         :file-name="file.name"
         :dimensions="dimensions"
