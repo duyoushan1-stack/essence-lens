@@ -22,6 +22,120 @@ body {
   color: var(--color-ink);
 }
 
+:root {
+  --proposal-motion-duration: 320ms;
+  --proposal-intro-leave-duration: 180ms;
+  --proposal-motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.proposal-flow-stage {
+  position: relative;
+}
+
+.proposal-flow-stage__intro {
+  position: relative;
+  z-index: 1;
+  max-height: 60rem;
+  transition:
+    opacity var(--proposal-intro-leave-duration) var(--proposal-motion-ease),
+    transform var(--proposal-intro-leave-duration) var(--proposal-motion-ease),
+    max-height var(--proposal-intro-leave-duration) var(--proposal-motion-ease);
+}
+
+.proposal-flow-stage--focused .proposal-flow-stage__intro {
+  position: absolute;
+  inset: 0 auto auto 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(-1rem, -6px, 0);
+  transition-duration: var(--proposal-motion-duration);
+}
+
+.proposal-flow-stage__image {
+  view-transition-name: proposal-preview;
+  transition:
+    opacity var(--proposal-motion-duration) var(--proposal-motion-ease),
+    transform var(--proposal-motion-duration) var(--proposal-motion-ease);
+}
+
+.proposal-flow-stage--focused .proposal-flow-stage__image {
+  animation: proposal-preview-settle 900ms var(--proposal-motion-ease) both;
+}
+
+.proposal-flow-stage__status {
+  view-transition-name: proposal-status;
+}
+
+.proposal-flow-stage__status > * {
+  animation: proposal-content-enter 840ms var(--proposal-motion-ease) 80ms both;
+}
+
+@keyframes proposal-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes proposal-preview-settle {
+  from {
+    opacity: 0.9;
+    transform: translate3d(1.25rem, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.proposal-card-content-enter-active {
+  transition:
+    opacity 320ms var(--proposal-motion-ease),
+    transform 320ms var(--proposal-motion-ease);
+}
+
+.proposal-card-content-leave-active {
+  transition:
+    opacity 180ms var(--proposal-motion-ease),
+    transform 180ms var(--proposal-motion-ease);
+}
+
+.proposal-card-content-enter-from {
+  opacity: 0;
+  transform: translateY(0.5rem);
+}
+
+.proposal-card-content-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+@media (max-width: 1023px) {
+  .proposal-flow-stage--focused .proposal-flow-stage__intro {
+    position: relative;
+    inset: auto;
+    max-height: 0;
+    margin-block: -1.5rem;
+    overflow: hidden;
+    transform: translateY(-1rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .proposal-flow-stage__intro,
+  .proposal-flow-stage__image,
+  .proposal-flow-stage__status > * {
+    animation: none;
+    transition: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

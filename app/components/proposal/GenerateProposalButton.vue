@@ -1,6 +1,7 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   loading: boolean
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -11,11 +12,11 @@ const emit = defineEmits<{
 <template>
   <button
     type="button"
-    class="cursor-pointer inline-flex min-h-12 items-center justify-center rounded-full bg-[#F1BF82] px-7 text-sm font-semibold text-white transition-colors hover:bg-[#D9673F] active:bg-[#C95B37] disabled:cursor-not-allowed disabled:opacity-60"
-    :disabled="loading"
+    class="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-accent px-5 text-sm font-semibold text-white transition-transform hover:-translate-y-px active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+    :disabled="props.disabled || loading"
     :aria-busy="loading"
     @click="emit('generate')"
   >
-    {{ loading ? '產生中…' : '產生提案' }}
+    {{ loading ? '生成中…' : '生成提案' }}
   </button>
 </template>

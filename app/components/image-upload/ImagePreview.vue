@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import type { ImageDimensions } from '~~/shared/types/image-upload'
-
 const props = defineProps<{
   previewUrl: string
   fileName: string
   dimensions: ImageDimensions | null
   disabled?: boolean
+  canGenerate?: boolean
+  generating?: boolean
 }>()
 
 const emit = defineEmits<{
   replace: []
+  generate: []
   remove: []
 }>()
 
@@ -83,6 +84,11 @@ const formatDimensions = (dimensions: ImageDimensions | null) => {
         >
           移除
         </button>
+        <GenerateProposalButton
+          :loading="props.generating ?? false"
+          :disabled="!props.canGenerate"
+          @generate="emit('generate')"
+        />
       </div>
     </div>
   </div>

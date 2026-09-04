@@ -1,11 +1,4 @@
 <script setup lang="ts">
-import type {
-  ImageDimensions,
-  ImageUploadErrorCode,
-  ImageUploadStatus
-} from '~~/shared/types/image-upload'
-import ImagePreview from './ImagePreview.vue'
-
 const props = defineProps<{
   status: ImageUploadStatus
   file: File | null
@@ -13,10 +6,13 @@ const props = defineProps<{
   dimensions: ImageDimensions | null
   errorCode: ImageUploadErrorCode | null
   loading: boolean
+  canGenerate?: boolean
+  generating?: boolean
 }>()
 
 const emit = defineEmits<{
   select: [file: File]
+  generate: []
   remove: []
 }>()
 
@@ -93,7 +89,10 @@ const handleFileChange = (event: Event) => {
         :file-name="file.name"
         :dimensions="dimensions"
         :disabled="loading"
+        :can-generate="canGenerate"
+        :generating="generating"
         @replace="openFilePicker"
+        @generate="emit('generate')"
         @remove="emit('remove')"
       />
     </div>
