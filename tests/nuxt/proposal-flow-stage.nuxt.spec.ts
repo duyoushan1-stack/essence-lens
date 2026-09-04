@@ -1,6 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import ProposalFlowStage from '../../app/components/proposal/ProposalFlowStage.vue'
+import ProposalFlowStage from '../../app/components/proposal/FlowStage.vue'
 
 afterEach(() => {
   Reflect.deleteProperty(document, 'startViewTransition')

@@ -84,7 +84,7 @@ const formatDimensions = (dimensions: ImageDimensions | null) => {
         >
           移除
         </button>
-        <GenerateProposalButton
+        <ProposalGenerateButton
           :loading="props.generating ?? false"
           :disabled="!props.canGenerate"
           @generate="emit('generate')"

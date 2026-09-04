@@ -1,6 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
-import ProposalCardStack from '../../app/components/proposal/ProposalCardStack.vue'
+import ProposalCardStack from '../../app/components/proposal/CardStack.vue'
 
 const proposals = [
   { title: '午後散步', description: '在附近街區慢慢走。' },

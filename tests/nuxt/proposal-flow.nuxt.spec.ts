@@ -1,6 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
-import ProposalResultPanel from '../../app/components/proposal/ProposalResultPanel.vue'
+import ProposalResultPanel from '../../app/components/proposal/ResultPanel.vue'
 
 describe('ProposalResultPanel', () => {
   it('shows a busy state while the proposal request is pending', async () => {
