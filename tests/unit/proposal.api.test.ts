@@ -1,24 +1,190 @@
+import type {
+  ProposalApiErrorResponse,
+  ProposalApiRejectedResponse,
+  ProposalApiSuccessResponse
+} from '../../shared/types/proposal-api'
 import type { Proposal } from '../../shared/types/proposal'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import type {
+  ProposalPipelineInput,
+  ProposalService,
+  ProposalServiceResult
+} from '../../server/services/proposal.service'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+
+interface MultipartPart {
+  name: string
+  data: Uint8Array
+  filename?: string
+  type?: string
+}
+
+interface RouteError extends Error {
+  statusCode: number
+  data: unknown
+}
 
 type ProposalHandler = typeof import('../../server/api/proposal.post').default
+type ProposalHandlerFactory = typeof import('../../server/api/proposal.post').createProposalHandler
 
-let proposalHandler: ProposalHandler
+let createProposalHandler: ProposalHandlerFactory
+let currentParts: MultipartPart[] | undefined
+let currentRequestId = 'request-123'
+
+const filePart: MultipartPart = {
+  name: 'file',
+  data: new Uint8Array([1, 2, 3]),
+  filename: 'sample.jpg',
+  type: 'image/jpeg'
+}
+
+const keyPart: MultipartPart = {
+  name: 'idempotencyKey',
+  data: new TextEncoder().encode('key-1')
+}
+
+const createService = (result: ProposalServiceResult): ProposalService => ({
+  generate: vi
+    .fn<(input: ProposalPipelineInput) => Promise<ProposalServiceResult>>()
+    .mockResolvedValue(result)
+})
 
 beforeAll(async () => {
-  vi.stubGlobal('defineEventHandler', (handler: () => Proposal) => handler)
+  vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
+  vi.stubGlobal('readMultipartFormData', async () => currentParts)
+  vi.stubGlobal(
+    'defineCachedFunction',
+    <TInput extends { idempotencyKey: string }, TResult>(
+      fn: (input: TInput) => Promise<TResult>,
+      options: { getKey: (input: TInput) => string | Promise<string> }
+    ) => {
+      const cache = new Map<string, TResult>()
+
+      return async (input: TInput): Promise<TResult> => {
+        const key = await options.getKey(input)
+        const existing = cache.get(key)
+
+        if (existing) {
+          return existing
+        }
+
+        const result = await fn(input)
+        cache.set(key, result)
+        return result
+      }
+    }
+  )
+  vi.stubGlobal('createError', (input: { statusCode: number; data: unknown }) => {
+    const error = new Error('route error') as RouteError
+    error.statusCode = input.statusCode
+    error.data = input.data
+    return error
+  })
+  vi.stubGlobal('crypto', { randomUUID: () => currentRequestId })
 
   const apiModule = await import('../../server/api/proposal.post')
-  proposalHandler = apiModule.default
+  createProposalHandler = apiModule.createProposalHandler
+})
+
+beforeEach(() => {
+  currentParts = [filePart, keyPart]
+  currentRequestId = 'request-123'
 })
 
 describe('POST /api/proposal', () => {
-  it('returns the typed mock proposal', async () => {
-    const response = await proposalHandler({} as Parameters<ProposalHandler>[0])
+  it('models success and rejected API outcomes with request ids', () => {
+    const success: ProposalApiSuccessResponse = {
+      status: 'success',
+      requestId: 'request-123',
+      proposals: [
+        {
+          title: '午後散步與咖啡',
+          description: '到附近街區散步，再找一間安靜的咖啡店休息。'
+        }
+      ]
+    }
+    const rejected: ProposalApiRejectedResponse = {
+      status: 'rejected',
+      requestId: 'request-123',
+      reasons: [{ category: 'safety', code: 'sexual' }]
+    }
 
-    expect(response).toEqual<Proposal>({
-      title: '午後散步與咖啡',
-      description: '到附近街區散步，再找一間安靜的咖啡店休息。'
+    expect(success.status).toBe('success')
+    expect(rejected.reasons[0]).toEqual({ category: 'safety', code: 'sexual' })
+  })
+
+  it('returns a success response from the proposal service', async () => {
+    const proposals: Proposal[] = [
+      {
+        title: '午後散步與咖啡',
+        description: '到附近街區散步，再找一間安靜的咖啡店休息。'
+      }
+    ]
+    const service = createService({ status: 'success', proposals })
+    const handler = createProposalHandler(service)
+
+    const response = await handler({} as Parameters<ProposalHandler>[0])
+
+    expect(response).toEqual<ProposalApiSuccessResponse>({
+      status: 'success',
+      requestId: 'request-123',
+      proposals
+    })
+    expect(service.generate).toHaveBeenCalledWith({
+      file: {
+        bytes: new Uint8Array([1, 2, 3]),
+        mimeType: 'image/jpeg',
+        filename: 'sample.jpg'
+      },
+      idempotencyKey: 'key-1'
+    })
+  })
+
+  it('returns 400 when the multipart request is missing a file', async () => {
+    currentParts = [keyPart]
+    const handler = createProposalHandler(createService({ status: 'success', proposals: [] }))
+
+    await expect(handler({} as Parameters<ProposalHandler>[0])).rejects.toMatchObject({
+      statusCode: 400
+    })
+  })
+
+  it('returns 422 with explicit rejection reasons', async () => {
+    const rejected: ProposalApiRejectedResponse = {
+      status: 'rejected',
+      requestId: 'request-123',
+      reasons: [{ category: 'safety', code: 'sexual' }]
+    }
+    const handler = createProposalHandler(
+      createService({ status: 'rejected', reasons: rejected.reasons })
+    )
+
+    await expect(handler({} as Parameters<ProposalHandler>[0])).rejects.toMatchObject({
+      statusCode: 422,
+      data: rejected
+    })
+  })
+
+  it('returns 409 when the idempotency key payload conflicts', async () => {
+    const handler = createProposalHandler(createService({ status: 'conflict' }))
+
+    await expect(handler({} as Parameters<ProposalHandler>[0])).rejects.toMatchObject({
+      statusCode: 409
+    })
+  })
+
+  it('returns a stable 5xx error response', async () => {
+    const error: ProposalApiErrorResponse = {
+      status: 'error',
+      requestId: 'request-123',
+      code: 'provider-unavailable'
+    }
+    const handler = createProposalHandler(
+      createService({ status: 'error', code: 'provider-unavailable' })
+    )
+
+    await expect(handler({} as Parameters<ProposalHandler>[0])).rejects.toMatchObject({
+      statusCode: 503,
+      data: error
     })
   })
 })
