@@ -2,7 +2,7 @@
 
 ## Design Read
 
-這是給重視視覺內容的消費型產品使用者的功能流程，採安靜、editorial 的語言，沿用 Asterism 現有的低飽和灰綠基底與暖杏色操作色，使用 Tailwind utility 與 CSS semantic tokens。
+這是給重視視覺內容的消費型產品使用者的功能流程，採安靜、editorial 的語言，沿用 EssenceLens 現有的低飽和灰綠基底與暖杏色操作色，使用 Tailwind utility 與 CSS semantic tokens。
 
 本功能不是行銷頁，也不是 dashboard。只套用設計規則中與產品流程直接相關的部分：狀態完整、可及性、responsive、保留圖片比例、避免無必要的動畫與套件。
 
