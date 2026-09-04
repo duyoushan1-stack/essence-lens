@@ -1,5 +1,3 @@
-import type { ImageDimensions, ImageValidationResult } from '~~/shared/types/image-upload'
-
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_IMAGE_SIZE_BYTES = 4 * 1024 * 1024
 const MIN_IMAGE_DIMENSION = 50

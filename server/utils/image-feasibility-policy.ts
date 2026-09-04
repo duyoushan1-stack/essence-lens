@@ -1,14 +1,3 @@
-import type {
-  ContentSafetyAssessment,
-  ImageFeasibilityInput,
-  ImageFeasibilityReason,
-  ImageFeasibilityResult,
-  ImageSemanticAnalysis,
-  InformationReasonCode,
-  SafetyReasonCode,
-  ThemeReasonCode
-} from '~~/shared/types/image-feasibility'
-
 const SAFETY_CATEGORIES: ReadonlyArray<
   readonly [keyof ContentSafetyAssessment['categories'], SafetyReasonCode]
 > = [

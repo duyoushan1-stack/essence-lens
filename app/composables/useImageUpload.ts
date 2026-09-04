@@ -1,9 +1,3 @@
-import type {
-  ImageDimensions,
-  ImageUploadErrorCode,
-  ImageUploadStatus
-} from '~~/shared/types/image-upload'
-
 export function useImageUpload() {
   const file = ref<File | null>(null)
   const previewUrl = ref<string | null>(null)
