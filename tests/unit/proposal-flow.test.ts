@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ImageUploadErrorCode, ImageUploadStatus } from '../../shared/types/image-upload'
-import type { ProposalStatus } from '../../shared/types/proposal'
+import type { ProposalStatus } from '../../app/types/proposal'
 import { getProposalFlowStatus } from '../../app/utils/proposal-flow'
 
 const getStatus = (

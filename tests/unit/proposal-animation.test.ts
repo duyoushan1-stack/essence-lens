@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { ProposalFlowStatus } from '../../shared/types/proposal-api'
+import type { ProposalFlowStatus } from '../../app/types/proposal'
 import { getProposalLayout } from '../../app/utils/proposal-animation'
 
 describe('getProposalLayout', () => {
