@@ -3,7 +3,7 @@ import type {
   ContentSafetyAssessment,
   ImageSemanticAnalysis
 } from '../../shared/types/image-feasibility'
-import type { ProviderImageInput } from '../../server/clients/provider.types'
+import type { ProviderImageInput } from '../../server/providers/provider.types'
 import { evaluateImageFeasibilityForFile } from '../../server/services/image-feasibility.service'
 
 const input: ProviderImageInput = {

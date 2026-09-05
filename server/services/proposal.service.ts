@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import type { ProposalProviderDependencies, ProviderImageInput } from '../clients/provider.types'
+import type { ProposalProviderDependencies, ProviderImageInput } from '../providers/provider.types'
 import { evaluateImageFeasibilityForFile } from './image-feasibility.service'
 
 export interface ProposalPipelineInput {

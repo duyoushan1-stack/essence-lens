@@ -332,8 +332,8 @@ server/api/proposal.post.ts
 server/services/proposal.service.ts
   ↓
 server/services/image-feasibility.service.ts
-  ├─ server/clients/azure-content-safety.client.ts
-  ├─ server/clients/gemini.client.ts
+  ├─ server/providers/azure-content-safety.ts
+  ├─ server/providers/gemini.ts
   └─ server/utils/image-feasibility-policy.ts
 ```
 

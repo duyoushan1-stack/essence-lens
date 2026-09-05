@@ -4,7 +4,7 @@ import type {
   ContentSafetyAssessment
 } from '../../shared/types/image-feasibility'
 import type { Proposal } from '../../shared/types/proposal'
-import type { ProviderImageInput } from '../../server/clients/provider.types'
+import type { ProviderImageInput } from '../../server/providers/provider.types'
 
 type ProposalServiceModule = typeof import('../../server/services/proposal.service')
 let createProposalService: ProposalServiceModule['createProposalService']

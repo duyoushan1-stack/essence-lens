@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createMockProposalProviders } from '../../server/clients/mock-providers'
+import { createMockProposalProviders } from '../../server/providers/mock-providers'
 
 describe('createMockProposalProviders', () => {
   it('returns safe, policy-compatible data for the local development pipeline', async () => {

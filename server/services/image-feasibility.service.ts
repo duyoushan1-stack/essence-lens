@@ -1,4 +1,4 @@
-import type { AnalyzeSafety, AnalyzeSemantics, ProviderImageInput } from '../clients/provider.types'
+import type { AnalyzeSafety, AnalyzeSemantics, ProviderImageInput } from '../providers/provider.types'
 import { evaluateImageFeasibility } from '../utils/image-feasibility-policy'
 
 const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])

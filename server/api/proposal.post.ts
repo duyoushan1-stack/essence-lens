@@ -1,6 +1,6 @@
-import { analyzeImageSafety } from '../clients/azure-content-safety'
-import { analyzeImageSemantics, generateProposal } from '../clients/gemini'
-import { createMockProposalProviders } from '../clients/mock-providers'
+import { analyzeImageSafety } from '../providers/azure-content-safety'
+import { analyzeImageSemantics, generateProposal } from '../providers/gemini'
+import { createMockProposalProviders } from '../providers/mock-providers'
 import {
   createProposalService,
   type ProposalService,
