@@ -21,13 +21,24 @@ export type ProposalRejectionReason =
 
 /** 可行性分析、提案生成或 Server 執行失敗的錯誤碼，不含 HTTP 請求層錯誤。 */
 export type ProposalErrorCode =
+  | 'provider-config-invalid'
+  | 'provider-authentication-failed'
+  | 'provider-invalid-request'
   | 'provider-unavailable'
+  | 'provider-request-failed'
   | 'malformed-provider-response'
   | 'proposal-generation-failed'
   | 'server-failure'
+
+/** 僅供 development 診斷使用的安全 Provider 資訊，不包含原始錯誤訊息或 payload。 */
+export interface ProposalErrorDiagnostics {
+  provider: string
+  statusCode?: number
+  providerCode?: string
+}
 
 /** 提案業務流程的最終結果，不包含請求追蹤資訊或 UI 過渡狀態。 */
 export type ProposalOutcome =
   | { status: 'success'; proposals: Proposal[] }
   | { status: 'rejected'; reasons: ProposalRejectionReason[] }
-  | { status: 'error'; code: ProposalErrorCode }
+  | { status: 'error'; code: ProposalErrorCode; diagnostics?: ProposalErrorDiagnostics }

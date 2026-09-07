@@ -1,4 +1,4 @@
-import { normalizeProviderError } from './provider-error'
+import { normalizeProviderError } from './providers/error'
 
 /** Provider 呼叫的重試限制與延遲設定；可注入 sleep 以便測試。 */
 export interface RetryPolicyOptions {
@@ -23,7 +23,8 @@ export const withRetry = async <T>(
   const baseDelayMs = Math.max(0, options.baseDelayMs ?? 250)
   const maxDelayMs = Math.max(baseDelayMs, options.maxDelayMs ?? 1000)
   const wait = options.sleep ?? sleep
-  const shouldRetry = options.shouldRetry ?? ((error: unknown) => normalizeProviderError(error).retryable)
+  const shouldRetry =
+    options.shouldRetry ?? ((error: unknown) => normalizeProviderError(error).retryable)
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
