@@ -20,6 +20,8 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@azure-rest/ai-content-safety": "^1.0.1",
+    "@azure/core-auth": "^1.11.0",
     "@nuxt/eslint": "1.17.0",
     "@nuxt/icon": "2.5.1",
     "@tailwindcss/vite": "^4.3.3",
