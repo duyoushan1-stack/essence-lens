@@ -1,6 +1,7 @@
 import type { ProposalProviderDependencies, ProviderImageInput } from '../providers/provider.types'
 import { evaluateImageFeasibilityForFile } from './image-feasibility.service'
 import { createImageFingerprint } from '../utils/image-fingerprint'
+import { normalizeProviderError } from '../utils/providers/error'
 import { withRetry } from '../utils/retry-policy'
 
 export interface ProposalPipelineInput {
@@ -38,8 +39,22 @@ export const createProposalService = (
     try {
       const proposals = await withRetry(() => dependencies.generateProposal(feasibility.context))
       return { status: 'success', proposals }
-    } catch {
-      return { status: 'error', code: mapProposalError() }
+    } catch (error: unknown) {
+      const normalizedError = normalizeProviderError(error, 'gemini')
+
+      return {
+        status: 'error',
+        code: mapProposalError(),
+        diagnostics: {
+          provider: normalizedError.provider ?? 'gemini',
+          ...(normalizedError.statusCode !== undefined
+            ? { statusCode: normalizedError.statusCode }
+            : {}),
+          ...(normalizedError.providerCode !== undefined
+            ? { providerCode: normalizedError.providerCode }
+            : {})
+        }
+      }
     }
   }
 

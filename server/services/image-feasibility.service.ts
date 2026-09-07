@@ -1,5 +1,10 @@
-import type { AnalyzeSafety, AnalyzeSemantics, ProviderImageInput } from '../providers/provider.types'
+import type {
+  AnalyzeSafety,
+  AnalyzeSemantics,
+  ProviderImageInput
+} from '../providers/provider.types'
 import { evaluateImageFeasibility } from '../utils/image-feasibility-policy'
+import { normalizeProviderError } from '../utils/providers/error'
 import { withRetry } from '../utils/retry-policy'
 
 const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
@@ -13,7 +18,7 @@ export interface ImageFeasibilityServiceDependencies {
 export type ImageFeasibilityServiceResult =
   | { status: 'accepted'; context: ProposalContext }
   | { status: 'rejected'; reasons: ProposalRejectionReason[] }
-  | { status: 'error'; code: ProposalErrorCode }
+  | { status: 'error'; code: ProposalErrorCode; diagnostics?: ProposalErrorDiagnostics }
 
 const validateTechnicalInput = (input: ProviderImageInput): ProposalRejectionReason | null => {
   if (input.bytes.byteLength === 0) {
@@ -62,6 +67,34 @@ const toProductReasons = (reasons: ImageFeasibilityReason[]): ProposalRejectionR
   return productReasons
 }
 
+const toProviderErrorResult = (
+  error: unknown,
+  provider: string
+): Extract<ImageFeasibilityServiceResult, { status: 'error' }> => {
+  const normalizedError = normalizeProviderError(error, provider)
+
+  const codeByKind: Record<ReturnType<typeof normalizeProviderError>['kind'], ProposalErrorCode> = {
+    configuration: 'provider-config-invalid',
+    authentication: 'provider-authentication-failed',
+    'invalid-request': 'provider-invalid-request',
+    transient: 'provider-unavailable',
+    'invalid-response': 'malformed-provider-response',
+    unknown: 'provider-request-failed'
+  }
+
+  const { provider: normalizedProvider, statusCode, providerCode } = normalizedError
+
+  return {
+    status: 'error',
+    code: codeByKind[normalizedError.kind],
+    diagnostics: {
+      provider: normalizedProvider ?? provider,
+      ...(statusCode !== undefined ? { statusCode } : {}),
+      ...(providerCode !== undefined ? { providerCode } : {})
+    }
+  }
+}
+
 export const evaluateImageFeasibilityForFile = async (
   input: ProviderImageInput,
   dependencies: ImageFeasibilityServiceDependencies
@@ -76,8 +109,8 @@ export const evaluateImageFeasibilityForFile = async (
 
   try {
     contentSafety = await withRetry(() => dependencies.analyzeSafety(input))
-  } catch {
-    return { status: 'error', code: 'provider-unavailable' }
+  } catch (error: unknown) {
+    return toProviderErrorResult(error, 'azure-content-safety')
   }
 
   const hasSafetyFinding = Object.values(contentSafety.categories).some((severity) => severity > 0)
@@ -95,8 +128,8 @@ export const evaluateImageFeasibilityForFile = async (
 
   try {
     semanticAnalysis = await withRetry(() => dependencies.analyzeSemantics(input))
-  } catch {
-    return { status: 'error', code: 'provider-unavailable' }
+  } catch (error: unknown) {
+    return toProviderErrorResult(error, 'gemini')
   }
 
   const feasibilityResult = evaluateImageFeasibility({

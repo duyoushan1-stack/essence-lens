@@ -22,6 +22,7 @@ export interface ProposalApiErrorResponse {
   status: 'error'
   requestId: string
   code: ProposalApiErrorCode
+  diagnostics?: ProposalErrorDiagnostics
 }
 
 /** 提案 API 的回應資料聯集；錯誤分支不包含框架的 HTTP 錯誤包裝。 */

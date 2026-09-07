@@ -1,26 +1,38 @@
-import { analyzeImageSafety } from '../providers/azure-content-safety'
-import { analyzeImageSemantics, generateProposal } from '../providers/gemini'
-import { createMockProposalProviders } from '../providers/mock-providers'
-import {
-  createProposalService,
-  type ProposalService,
-  type ProposalServiceResult
-} from '../services/proposal.service'
-
-const defaultProposalService = createProposalService(
-  import.meta.dev
-    ? createMockProposalProviders()
-    : {
-        analyzeSafety: analyzeImageSafety,
-        analyzeSemantics: analyzeImageSemantics,
-        generateProposal
-      }
-)
+import { getProposalService } from '../utils/providers/factory'
+import type { ProposalService, ProposalServiceResult } from '../services/proposal.service'
 
 const getRequestId = () => crypto.randomUUID()
 
-const toErrorStatusCode = (code: ProposalApiErrorResponse['code']) =>
-  code === 'provider-unavailable' ? 503 : 500
+const toErrorStatusCode = (code: ProposalApiErrorResponse['code']) => {
+  if (code === 'provider-unavailable') {
+    return 503
+  }
+
+  if (code === 'provider-invalid-request') {
+    return 422
+  }
+
+  if (
+    code === 'provider-authentication-failed' ||
+    code === 'provider-request-failed' ||
+    code === 'malformed-provider-response'
+  ) {
+    return 502
+  }
+
+  return 500
+}
+
+export const toApiErrorResponse = (
+  requestId: string,
+  result: Extract<ProposalServiceResult, { status: 'error' }>,
+  includeDiagnostics = import.meta.dev
+): ProposalApiErrorResponse => ({
+  status: 'error',
+  requestId,
+  code: result.code,
+  ...(includeDiagnostics && result.diagnostics ? { diagnostics: result.diagnostics } : {})
+})
 
 const toResponse = (requestId: string, result: ProposalServiceResult) => {
   if (result.status === 'success') {
@@ -48,15 +60,16 @@ const toResponse = (requestId: string, result: ProposalServiceResult) => {
     })
   }
 
-  const response: ProposalApiErrorResponse = {
-    status: 'error',
-    requestId,
-    code: result.code
+  const response = toApiErrorResponse(requestId, result)
+
+  if (import.meta.dev && response.diagnostics) {
+    console.error('[proposal provider error]', response)
   }
+
   throw createError({ statusCode: toErrorStatusCode(result.code), data: response })
 }
 
-export const createProposalHandler = (proposalService: ProposalService = defaultProposalService) =>
+export const createProposalHandler = (proposalService?: ProposalService) =>
   defineEventHandler(async (event) => {
     const requestId = getRequestId()
     let parts: Awaited<ReturnType<typeof readMultipartFormData>>
@@ -83,7 +96,7 @@ export const createProposalHandler = (proposalService: ProposalService = default
     let result: ProposalServiceResult
 
     try {
-      result = await proposalService.generate({
+      result = await (proposalService ?? getProposalService()).generate({
         file: {
           bytes: filePart.data,
           mimeType: filePart.type ?? '',
