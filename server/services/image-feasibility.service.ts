@@ -1,5 +1,6 @@
 import type { AnalyzeSafety, AnalyzeSemantics, ProviderImageInput } from '../providers/provider.types'
 import { evaluateImageFeasibility } from '../utils/image-feasibility-policy'
+import { withRetry } from '../utils/retry-policy'
 
 const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 const MAX_IMAGE_SIZE_BYTES = 4 * 1024 * 1024
@@ -74,7 +75,7 @@ export const evaluateImageFeasibilityForFile = async (
   let contentSafety
 
   try {
-    contentSafety = await dependencies.analyzeSafety(input)
+    contentSafety = await withRetry(() => dependencies.analyzeSafety(input))
   } catch {
     return { status: 'error', code: 'provider-unavailable' }
   }
@@ -93,7 +94,7 @@ export const evaluateImageFeasibilityForFile = async (
   let semanticAnalysis
 
   try {
-    semanticAnalysis = await dependencies.analyzeSemantics(input)
+    semanticAnalysis = await withRetry(() => dependencies.analyzeSemantics(input))
   } catch {
     return { status: 'error', code: 'provider-unavailable' }
   }
