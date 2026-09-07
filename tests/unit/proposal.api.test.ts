@@ -11,6 +11,17 @@ import type {
 } from '../../server/services/proposal.service'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('@azure-rest/ai-content-safety', () => ({
+  default: vi.fn(),
+  isUnexpected: vi.fn()
+}))
+
+vi.mock('@azure/core-auth', () => ({
+  AzureKeyCredential: class MockAzureKeyCredential {
+    constructor(readonly key: string) {}
+  }
+}))
+
 interface MultipartPart {
   name: string
   data: Uint8Array
@@ -25,8 +36,10 @@ interface RouteError extends Error {
 
 type ProposalHandler = typeof import('../../server/api/proposal.post').default
 type ProposalHandlerFactory = typeof import('../../server/api/proposal.post').createProposalHandler
+type ApiErrorResponseFactory = typeof import('../../server/api/proposal.post').toApiErrorResponse
 
 let createProposalHandler: ProposalHandlerFactory
+let toApiErrorResponse: ApiErrorResponseFactory
 let currentParts: MultipartPart[] | undefined
 let currentIdempotencyKey: string | undefined
 let currentRequestId = 'request-123'
@@ -80,6 +93,7 @@ beforeAll(async () => {
 
   const apiModule = await import('../../server/api/proposal.post')
   createProposalHandler = apiModule.createProposalHandler
+  toApiErrorResponse = apiModule.toApiErrorResponse
 })
 
 beforeEach(() => {
@@ -208,6 +222,30 @@ describe('POST /api/proposal', () => {
     await expect(handler({} as Parameters<ProposalHandler>[0])).rejects.toMatchObject({
       statusCode: 503,
       data: error
+    })
+  })
+
+  it('includes safe provider diagnostics only when explicitly enabled', () => {
+    const result = {
+      status: 'error' as const,
+      code: 'provider-authentication-failed' as const,
+      diagnostics: {
+        provider: 'azure-content-safety',
+        statusCode: 401,
+        providerCode: 'InvalidApiKey'
+      }
+    }
+
+    expect(toApiErrorResponse('request-123', result, true)).toEqual({
+      status: 'error',
+      requestId: 'request-123',
+      code: 'provider-authentication-failed',
+      diagnostics: result.diagnostics
+    })
+    expect(toApiErrorResponse('request-123', result, false)).toEqual({
+      status: 'error',
+      requestId: 'request-123',
+      code: 'provider-authentication-failed'
     })
   })
 

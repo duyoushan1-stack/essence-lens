@@ -45,7 +45,6 @@ const input: ProviderImageInput = {
 
 const safety: ContentSafetyAssessment = {
   provider: 'azure-content-safety',
-  apiVersion: '2024-09-01',
   categories: { hate: 0, 'self-harm': 0, sexual: 0, violence: 0 }
 }
 
@@ -113,6 +112,29 @@ describe('createProposalService', () => {
       reasons: [{ category: 'safety', code: 'violence' }]
     })
     expect(generateProposal).not.toHaveBeenCalled()
+  })
+
+  it('keeps safe Gemini diagnostics for proposal generation failures', async () => {
+    const analyzeSafety = vi.fn().mockResolvedValue(safety)
+    const analyzeSemantics = vi.fn().mockResolvedValue(semantics)
+    const generateProposal = vi.fn().mockRejectedValue({
+      status: 503,
+      provider: 'gemini',
+      providerCode: 'ServiceUnavailable'
+    })
+    const service = createProposalService({ analyzeSafety, analyzeSemantics, generateProposal })
+
+    const result = await service.generate({ file: input, idempotencyKey: 'key-gemini-error' })
+
+    expect(result).toEqual({
+      status: 'error',
+      code: 'proposal-generation-failed',
+      diagnostics: {
+        provider: 'gemini',
+        statusCode: 503,
+        providerCode: 'ServiceUnavailable'
+      }
+    })
   })
 
   it('replays the outcome for the same key and rejects a different payload', async () => {

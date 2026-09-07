@@ -14,7 +14,6 @@ const input: ProviderImageInput = {
 
 const safeContentSafety: ContentSafetyAssessment = {
   provider: 'azure-content-safety',
-  apiVersion: '2024-09-01',
   categories: {
     hate: 0,
     'self-harm': 0,
@@ -99,7 +98,56 @@ describe('evaluateImageFeasibilityForFile', () => {
       analyzeSemantics
     })
 
-    expect(result).toEqual({ status: 'error', code: 'provider-unavailable' })
+    expect(result).toEqual({
+      status: 'error',
+      code: 'provider-request-failed',
+      diagnostics: { provider: 'azure-content-safety' }
+    })
+    expect(analyzeSemantics).not.toHaveBeenCalled()
+  })
+
+  it('keeps authentication diagnostics in development-safe error data', async () => {
+    const analyzeSafety = vi.fn().mockRejectedValue({
+      status: 401,
+      provider: 'azure-content-safety',
+      providerCode: 'InvalidApiKey'
+    })
+    const analyzeSemantics = vi.fn()
+
+    const result = await evaluateImageFeasibilityForFile(input, {
+      analyzeSafety,
+      analyzeSemantics
+    })
+
+    expect(result).toEqual({
+      status: 'error',
+      code: 'provider-authentication-failed',
+      diagnostics: {
+        provider: 'azure-content-safety',
+        statusCode: 401,
+        providerCode: 'InvalidApiKey'
+      }
+    })
+    expect(analyzeSemantics).not.toHaveBeenCalled()
+  })
+
+  it('maps an invalid Provider response to a malformed response error', async () => {
+    const analyzeSafety = vi.fn().mockRejectedValue({ code: 'malformed-response' })
+    const analyzeSemantics = vi.fn()
+
+    const result = await evaluateImageFeasibilityForFile(input, {
+      analyzeSafety,
+      analyzeSemantics
+    })
+
+    expect(result).toEqual({
+      status: 'error',
+      code: 'malformed-provider-response',
+      diagnostics: {
+        provider: 'azure-content-safety',
+        providerCode: 'malformed-response'
+      }
+    })
     expect(analyzeSemantics).not.toHaveBeenCalled()
   })
 
