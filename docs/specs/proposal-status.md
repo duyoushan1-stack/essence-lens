@@ -164,15 +164,21 @@ Provider 或 Server 發生錯誤時，即使 pipeline 必須停止並採 fail-cl
 
 ```text
 POST /api/proposal
+Idempotency-Key: <uuid>
 Content-Type: multipart/form-data
 ```
 
 欄位：
 
-| 欄位             | 必填 | 說明                      |
-| ---------------- | ---- | ------------------------- |
-| `file`           | 是   | 使用者選取的原始圖片 File |
-| `idempotencyKey` | 是   | 同一次操作共用的唯一 key  |
+| 欄位   | 必填 | 說明                      |
+| ------ | ---- | ------------------------- |
+| `file` | 是   | 使用者選取的原始圖片 File |
+
+Header：
+
+| Header            | 必填 | 說明                     |
+| ----------------- | ---- | ------------------------ |
+| `Idempotency-Key` | 是   | 同一次操作共用的唯一 key |
 
 Client 不傳送 `previewUrl` 代替原始 File，也不直接呼叫 Azure 或 Gemini。
 
@@ -234,7 +240,7 @@ information
 用於 request contract 錯誤：
 
 - 缺少 `file`。
-- 缺少 `idempotencyKey`。
+- 缺少 `Idempotency-Key` Header。
 - multipart 格式錯誤。
 
 這不是圖片被產品政策拒絕。
@@ -255,15 +261,17 @@ information
 }
 ```
 
+若 Server service 發生未預期例外，則使用 `server-failure`，不回傳內部錯誤訊息。
+
 ## 7. Server 與 Provider 責任
 
-### 7.1 Server route
+### 7.1 Server API
 
 `server/api/proposal.post.ts` 是唯一的產品流程入口，負責：
 
 - 解析與檢查 multipart request。
 - 產生 `requestId`。
-- 取得並驗證 `idempotencyKey`。
+- 取得並驗證 `Idempotency-Key` Header。
 - 呼叫 proposal service。
 - 將 service outcome 映射成 HTTP `200`、`400`、`409`、`422` 或 `5xx`。
 

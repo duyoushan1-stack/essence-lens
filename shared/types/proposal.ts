@@ -19,9 +19,12 @@ export type ProposalRejectionReason =
   | { category: 'theme'; code: ThemeReasonCode }
   | { category: 'information'; code: InformationReasonCode }
 
-/** 可行性分析或提案生成失敗的錯誤碼，不含 HTTP 請求層錯誤。 */
+/** 可行性分析、提案生成或 Server 執行失敗的錯誤碼，不含 HTTP 請求層錯誤。 */
 export type ProposalErrorCode =
-  'provider-unavailable' | 'malformed-provider-response' | 'proposal-generation-failed'
+  | 'provider-unavailable'
+  | 'malformed-provider-response'
+  | 'proposal-generation-failed'
+  | 'server-failure'
 
 /** 提案業務流程的最終結果，不包含請求追蹤資訊或 UI 過渡狀態。 */
 export type ProposalOutcome =

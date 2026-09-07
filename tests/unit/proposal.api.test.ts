@@ -28,6 +28,7 @@ type ProposalHandlerFactory = typeof import('../../server/api/proposal.post').cr
 
 let createProposalHandler: ProposalHandlerFactory
 let currentParts: MultipartPart[] | undefined
+let currentIdempotencyKey: string | undefined
 let currentRequestId = 'request-123'
 
 const filePart: MultipartPart = {
@@ -35,11 +36,6 @@ const filePart: MultipartPart = {
   data: new Uint8Array([1, 2, 3]),
   filename: 'sample.jpg',
   type: 'image/jpeg'
-}
-
-const keyPart: MultipartPart = {
-  name: 'idempotencyKey',
-  data: new TextEncoder().encode('key-1')
 }
 
 const createService = (result: ProposalServiceResult): ProposalService => ({
@@ -51,6 +47,7 @@ const createService = (result: ProposalServiceResult): ProposalService => ({
 beforeAll(async () => {
   vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
   vi.stubGlobal('readMultipartFormData', async () => currentParts)
+  vi.stubGlobal('getHeader', (_event: unknown, _name: string) => currentIdempotencyKey)
   vi.stubGlobal(
     'defineCachedFunction',
     <TInput extends { idempotencyKey: string }, TResult>(
@@ -86,7 +83,8 @@ beforeAll(async () => {
 })
 
 beforeEach(() => {
-  currentParts = [filePart, keyPart]
+  currentParts = [filePart]
+  currentIdempotencyKey = 'key-1'
   currentRequestId = 'request-123'
 })
 
@@ -140,12 +138,37 @@ describe('POST /api/proposal', () => {
   })
 
   it('returns 400 when the multipart request is missing a file', async () => {
-    currentParts = [keyPart]
+    currentParts = []
     const handler = createProposalHandler(createService({ status: 'success', proposals: [] }))
 
     await expect(handler({} as Parameters<ProposalHandler>[0])).rejects.toMatchObject({
       statusCode: 400
     })
+  })
+
+  it('returns 400 when the idempotency key header is missing', async () => {
+    currentIdempotencyKey = undefined
+    const handler = createProposalHandler(createService({ status: 'success', proposals: [] }))
+
+    await expect(handler({} as Parameters<ProposalHandler>[0])).rejects.toMatchObject({
+      statusCode: 400,
+      data: { status: 'error', requestId: 'request-123', code: 'request-failed' }
+    })
+  })
+
+  it('returns 400 when multipart parsing fails', async () => {
+    currentParts = undefined
+    vi.stubGlobal('readMultipartFormData', async () => {
+      throw new Error('malformed multipart')
+    })
+    const handler = createProposalHandler(createService({ status: 'success', proposals: [] }))
+
+    await expect(handler({} as Parameters<ProposalHandler>[0])).rejects.toMatchObject({
+      statusCode: 400,
+      data: { status: 'error', requestId: 'request-123', code: 'request-failed' }
+    })
+
+    vi.stubGlobal('readMultipartFormData', async () => currentParts)
   })
 
   it('returns 422 with explicit rejection reasons', async () => {
@@ -185,6 +208,22 @@ describe('POST /api/proposal', () => {
     await expect(handler({} as Parameters<ProposalHandler>[0])).rejects.toMatchObject({
       statusCode: 503,
       data: error
+    })
+  })
+
+  it('normalizes an unexpected service failure without exposing its message', async () => {
+    const service: ProposalService = {
+      generate: vi.fn().mockRejectedValue(new Error('provider secret'))
+    }
+    const handler = createProposalHandler(service)
+
+    await expect(handler({} as Parameters<ProposalHandler>[0])).rejects.toMatchObject({
+      statusCode: 500,
+      data: {
+        status: 'error',
+        requestId: 'request-123',
+        code: 'server-failure'
+      }
     })
   })
 })

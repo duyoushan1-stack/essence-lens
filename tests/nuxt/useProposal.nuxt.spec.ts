@@ -23,18 +23,24 @@ const proposalResponse: ProposalApiSuccessResponse = {
   ]
 }
 
-const getRequestOptions = () => {
+interface RequestOptions {
+  method: string
+  body: FormData
+  headers?: Record<string, string>
+}
+
+const getRequestOptions = (): RequestOptions => {
   const options = fetchMock.mock.calls.at(-1)?.[1]
 
   if (!options || typeof options !== 'object' || !('body' in options)) {
     throw new Error('Expected a request body')
   }
 
-  return options as { method: string; body: FormData }
+  return options as RequestOptions
 }
 
 const getIdempotencyKey = () => {
-  const value = getRequestOptions().body.get('idempotencyKey')
+  const value = getRequestOptions().headers?.['Idempotency-Key']
 
   if (typeof value !== 'string') {
     throw new Error('Expected an idempotency key')
@@ -78,6 +84,8 @@ describe('useProposal', () => {
     expect(fetchMock).toHaveBeenCalledOnce()
     expect(getRequestOptions().method).toBe('POST')
     expect(getRequestOptions().body.get('file')).toBe(file)
+    expect(getRequestOptions().body.get('idempotencyKey')).toBeNull()
+    expect(getIdempotencyKey()).toEqual(expect.any(String))
 
     resolveRequest(proposalResponse)
     await request
@@ -113,7 +121,12 @@ describe('useProposal', () => {
       requestId: 'request-456',
       reasons: [{ category: 'safety', code: 'sexual' }]
     }
-    fetchMock.mockRejectedValueOnce({ response: { status: 422, _data: rejectedResponse } })
+    fetchMock.mockRejectedValueOnce({
+      response: {
+        status: 422,
+        _data: { statusCode: 422, data: rejectedResponse }
+      }
+    })
 
     const state = useProposal()
     await state.generate(file)
@@ -121,6 +134,29 @@ describe('useProposal', () => {
     expect(state.status.value).toBe('rejected')
     expect(state.rejectionReasons.value).toEqual(rejectedResponse.reasons)
     expect(state.error.value).toBeNull()
+  })
+
+  it('preserves a normalized API error code without exposing provider details', async () => {
+    fetchMock.mockRejectedValueOnce({
+      response: {
+        status: 503,
+        _data: {
+          statusCode: 503,
+          data: {
+            status: 'error',
+            requestId: 'request-789',
+            code: 'provider-unavailable'
+          }
+        }
+      }
+    })
+
+    const state = useProposal()
+    await state.generate(file)
+
+    expect(state.status.value).toBe('error')
+    expect(state.errorCode.value).toBe('provider-unavailable')
+    expect(state.error.value).toBe('目前無法產生提案，請稍後再試。')
   })
 
   it('clears the error and uses a new key when retrying', async () => {

@@ -19,8 +19,6 @@ const defaultProposalService = createProposalService(
 
 const getRequestId = () => crypto.randomUUID()
 
-const getTextPart = (part: { data: Uint8Array }): string => new TextDecoder().decode(part.data)
-
 const toErrorStatusCode = (code: ProposalApiErrorResponse['code']) =>
   code === 'provider-unavailable' ? 503 : 500
 
@@ -61,34 +59,42 @@ const toResponse = (requestId: string, result: ProposalServiceResult) => {
 export const createProposalHandler = (proposalService: ProposalService = defaultProposalService) =>
   defineEventHandler(async (event) => {
     const requestId = getRequestId()
-    const parts = await readMultipartFormData(event)
+    let parts: Awaited<ReturnType<typeof readMultipartFormData>>
+
+    try {
+      parts = await readMultipartFormData(event)
+    } catch {
+      throw createError({
+        statusCode: 400,
+        data: { status: 'error', requestId, code: 'request-failed' }
+      })
+    }
+
     const filePart = parts?.find((part) => part.name === 'file')
-    const keyPart = parts?.find((part) => part.name === 'idempotencyKey')
+    const idempotencyKey = getHeader(event, 'Idempotency-Key')?.trim()
 
-    if (!filePart || !keyPart) {
+    if (!filePart || !idempotencyKey) {
       throw createError({
         statusCode: 400,
         data: { status: 'error', requestId, code: 'request-failed' }
       })
     }
 
-    const idempotencyKey = getTextPart(keyPart)
+    let result: ProposalServiceResult
 
-    if (!idempotencyKey) {
-      throw createError({
-        statusCode: 400,
-        data: { status: 'error', requestId, code: 'request-failed' }
+    try {
+      result = await proposalService.generate({
+        file: {
+          bytes: filePart.data,
+          mimeType: filePart.type ?? '',
+          filename: filePart.filename ?? 'upload'
+        },
+        idempotencyKey
       })
+    } catch {
+      // 將非預期的 service 例外收斂在公開 API error contract 內。
+      return toResponse(requestId, { status: 'error', code: 'server-failure' })
     }
-
-    const result = await proposalService.generate({
-      file: {
-        bytes: filePart.data,
-        mimeType: filePart.type ?? '',
-        filename: filePart.filename ?? 'upload'
-      },
-      idempotencyKey
-    })
 
     return toResponse(requestId, result)
   })
