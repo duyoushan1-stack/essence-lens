@@ -2,7 +2,6 @@ import type { ProposalProviderDependencies } from './provider.types'
 
 const MOCK_SAFETY: ContentSafetyAssessment = {
   provider: 'azure-content-safety',
-  apiVersion: 'mock',
   categories: { hate: 0, 'self-harm': 0, sexual: 0, violence: 0 }
 }
 

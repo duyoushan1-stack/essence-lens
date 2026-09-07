@@ -4,7 +4,6 @@ export type ContentSafetyCategory = 'hate' | 'self-harm' | 'sexual' | 'violence'
 
 export interface ContentSafetyAssessment {
   provider: 'azure-content-safety'
-  apiVersion: string
   categories: Record<ContentSafetyCategory, ContentSafetySeverity>
 }
 

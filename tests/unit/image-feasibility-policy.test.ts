@@ -7,7 +7,6 @@ import { evaluateImageFeasibility } from '../../server/utils/image-feasibility-p
 
 const safeContentSafety: ContentSafetyAssessment = {
   provider: 'azure-content-safety',
-  apiVersion: '2024-09-01',
   categories: {
     hate: 0,
     'self-harm': 0,
