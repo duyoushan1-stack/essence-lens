@@ -249,9 +249,17 @@ information
 
 同一 `idempotencyKey` 被重複使用，但 payload fingerprint 不同時回傳 `409`。Server 不回傳第一次操作的結果，也不執行第二個 payload。
 
-#### `5xx error`
+#### Provider / Server error
 
-用於 Provider、網路或 Server 執行失敗。對外只回傳穩定的錯誤 code 與 `requestId`，不暴露 API key、Provider 原始錯誤或完整 response。
+Provider、網路或 Server 執行失敗時，對外只回傳穩定的錯誤 code 與 `requestId`，不暴露 API key、Provider 原始錯誤或完整 response。Provider error 依情境使用不同 HTTP status：
+
+- `provider-config-invalid`：`500`。
+- `provider-authentication-failed`：`502`。
+- `provider-invalid-request`：`422`。
+- `provider-unavailable`：`503`，可重試。
+- `provider-request-failed`、`malformed-provider-response`：`502`。
+
+Development 可額外回傳安全的 `diagnostics`：`provider`、`statusCode` 與 `providerCode`，並在 Server console 記錄相同資訊；production 不輸出 console，也不回傳 `diagnostics`。
 
 ```json
 {
@@ -428,7 +436,9 @@ MVP 明確接受以下限制：
 
 ## 12. 最小案例驗證
 
-外部 Azure 與 Gemini 尚未串接完成前，開發環境的 default Server route 使用 typed mock provider data 進行最小案例驗證。Mock 僅在 development build 注入，不新增 production runtime mock flag；production 仍使用真實 Provider client，未配置或未連線時回傳 `503 provider-unavailable`。Mock 不改變 Server route 與 service 的資料流程。
+外部 Azure 與 Gemini 尚未串接完成前，開發環境的 default Server route 使用 typed mock provider data 進行最小案例驗證。Development 預設仍使用 mock；只有設定 `NUXT_PROPOSAL_PROVIDER_MODE=azure` 才允許本機使用真實 Azure 與 Gemini provider。Production 仍使用真實 Provider client，未配置或未連線時回傳 `503 provider-unavailable`。Mock 不改變 Server route 與 service 的資料流程。
+
+安全分析先於 Gemini 執行。若 Azure 任一 category 的 severity 大於 `0`，pipeline 立即回傳 safety rejection，不呼叫 Gemini semantic analysis 或 proposal generation；只有所有 Azure severity 都是 `0` 時才進入 Gemini。
 
 測試應保留真實的 Server orchestration，僅 mock provider client 或 provider service 的輸入與輸出：
 
