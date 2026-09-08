@@ -42,6 +42,7 @@ let createProposalHandler: ProposalHandlerFactory
 let toApiErrorResponse: ApiErrorResponseFactory
 let currentParts: MultipartPart[] | undefined
 let currentIdempotencyKey: string | undefined
+let currentDebugHeader: string | undefined
 let currentRequestId = 'request-123'
 
 const filePart: MultipartPart = {
@@ -60,7 +61,17 @@ const createService = (result: ProposalServiceResult): ProposalService => ({
 beforeAll(async () => {
   vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
   vi.stubGlobal('readMultipartFormData', async () => currentParts)
-  vi.stubGlobal('getHeader', (_event: unknown, _name: string) => currentIdempotencyKey)
+  vi.stubGlobal('getHeader', (_event: unknown, name: string) => {
+    if (name === 'Idempotency-Key') {
+      return currentIdempotencyKey
+    }
+
+    if (name === 'X-Proposal-Debug') {
+      return currentDebugHeader
+    }
+
+    return undefined
+  })
   vi.stubGlobal(
     'defineCachedFunction',
     <TInput extends { idempotencyKey: string }, TResult>(
@@ -99,6 +110,7 @@ beforeAll(async () => {
 beforeEach(() => {
   currentParts = [filePart]
   currentIdempotencyKey = 'key-1'
+  currentDebugHeader = undefined
   currentRequestId = 'request-123'
 })
 
@@ -225,14 +237,16 @@ describe('POST /api/proposal', () => {
     })
   })
 
-  it('includes safe provider diagnostics only when explicitly enabled', () => {
+  it('includes safe provider debug data only when explicitly enabled', () => {
     const result = {
       status: 'error' as const,
       code: 'provider-authentication-failed' as const,
-      diagnostics: {
-        provider: 'azure-content-safety',
-        statusCode: 401,
-        providerCode: 'InvalidApiKey'
+      debug: {
+        provider: {
+          provider: 'azure-content-safety',
+          statusCode: 401,
+          providerCode: 'InvalidApiKey'
+        }
       }
     }
 
@@ -240,12 +254,54 @@ describe('POST /api/proposal', () => {
       status: 'error',
       requestId: 'request-123',
       code: 'provider-authentication-failed',
-      diagnostics: result.diagnostics
+      debug: result.debug
     })
     expect(toApiErrorResponse('request-123', result, false)).toEqual({
       status: 'error',
       requestId: 'request-123',
       code: 'provider-authentication-failed'
+    })
+  })
+
+  it('passes the explicit debug opt-in and returns semantic analysis in development', async () => {
+    const debug = {
+      semanticAnalysis: {
+        schemaVersion: 'image-semantic-analysis-v1' as const,
+        scene: { category: 'outdoor' as const, recognizable: true },
+        subjects: {
+          peopleCount: 0,
+          isSelfie: 'absent' as const,
+          hasProductFocus: 'absent' as const,
+          hasPetCloseup: 'absent' as const,
+          isMemeLike: 'absent' as const
+        },
+        quality: { blur: 'none' as const, isSolidColor: 'absent' as const, informationSufficient: true },
+        safety: {
+          nudity: 'absent' as const,
+          sexual: 'absent' as const,
+          violence: 'absent' as const,
+          gore: 'absent' as const
+        },
+        visualMood: ['calm'],
+        usefulObjects: ['trees']
+      }
+    }
+    const proposals: Proposal[] = [{ title: '午後散步', description: '到附近走走。' }]
+    const service = createService({ status: 'success', proposals, debug })
+    const handler = createProposalHandler(service, { isDevelopment: true })
+    currentDebugHeader = '1'
+
+    const response = await handler({} as Parameters<ProposalHandler>[0])
+
+    expect(response).toEqual({ status: 'success', requestId: 'request-123', proposals, debug })
+    expect(service.generate).toHaveBeenCalledWith({
+      file: {
+        bytes: new Uint8Array([1, 2, 3]),
+        mimeType: 'image/jpeg',
+        filename: 'sample.jpg'
+      },
+      idempotencyKey: 'key-1',
+      debug: true
     })
   })
 

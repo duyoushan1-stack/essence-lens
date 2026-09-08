@@ -80,7 +80,7 @@ describe('evaluateImageFeasibilityForFile', () => {
     const result = await evaluateImageFeasibilityForFile(input, {
       analyzeSafety,
       analyzeSemantics
-    })
+    }, { includeDebug: true })
 
     expect(result).toEqual({
       status: 'rejected',
@@ -96,17 +96,17 @@ describe('evaluateImageFeasibilityForFile', () => {
     const result = await evaluateImageFeasibilityForFile(input, {
       analyzeSafety,
       analyzeSemantics
-    })
+    }, { includeDebug: true })
 
     expect(result).toEqual({
       status: 'error',
       code: 'provider-request-failed',
-      diagnostics: { provider: 'azure-content-safety' }
+      debug: { provider: { provider: 'azure-content-safety' } }
     })
     expect(analyzeSemantics).not.toHaveBeenCalled()
   })
 
-  it('keeps authentication diagnostics in development-safe error data', async () => {
+  it('keeps authentication provider debug data in development-safe error data', async () => {
     const analyzeSafety = vi.fn().mockRejectedValue({
       status: 401,
       provider: 'azure-content-safety',
@@ -117,15 +117,17 @@ describe('evaluateImageFeasibilityForFile', () => {
     const result = await evaluateImageFeasibilityForFile(input, {
       analyzeSafety,
       analyzeSemantics
-    })
+    }, { includeDebug: true })
 
     expect(result).toEqual({
       status: 'error',
       code: 'provider-authentication-failed',
-      diagnostics: {
-        provider: 'azure-content-safety',
-        statusCode: 401,
-        providerCode: 'InvalidApiKey'
+      debug: {
+        provider: {
+          provider: 'azure-content-safety',
+          statusCode: 401,
+          providerCode: 'InvalidApiKey'
+        }
       }
     })
     expect(analyzeSemantics).not.toHaveBeenCalled()
@@ -138,14 +140,16 @@ describe('evaluateImageFeasibilityForFile', () => {
     const result = await evaluateImageFeasibilityForFile(input, {
       analyzeSafety,
       analyzeSemantics
-    })
+    }, { includeDebug: true })
 
     expect(result).toEqual({
       status: 'error',
       code: 'malformed-provider-response',
-      diagnostics: {
-        provider: 'azure-content-safety',
-        providerCode: 'malformed-response'
+      debug: {
+        provider: {
+          provider: 'azure-content-safety',
+          providerCode: 'malformed-response'
+        }
       }
     })
     expect(analyzeSemantics).not.toHaveBeenCalled()
@@ -166,5 +170,27 @@ describe('evaluateImageFeasibilityForFile', () => {
     })
     expect(analyzeSafety).not.toHaveBeenCalled()
     expect(analyzeSemantics).not.toHaveBeenCalled()
+  })
+
+  it('returns semantic analysis only when debug is explicitly enabled', async () => {
+    const analyzeSafety = vi.fn().mockResolvedValue(safeContentSafety)
+    const analyzeSemantics = vi.fn().mockResolvedValue(clearSemanticAnalysis)
+
+    const result = await evaluateImageFeasibilityForFile(
+      input,
+      { analyzeSafety, analyzeSemantics },
+      { includeDebug: true }
+    )
+
+    expect(result).toEqual({
+      status: 'accepted',
+      context: {
+        scene: clearSemanticAnalysis.scene,
+        subjects: clearSemanticAnalysis.subjects,
+        visualMood: clearSemanticAnalysis.visualMood,
+        usefulObjects: clearSemanticAnalysis.usefulObjects
+      },
+      debug: { semanticAnalysis: clearSemanticAnalysis }
+    })
   })
 })

@@ -114,7 +114,7 @@ describe('createProposalService', () => {
     expect(generateProposal).not.toHaveBeenCalled()
   })
 
-  it('keeps safe Gemini diagnostics for proposal generation failures', async () => {
+  it('keeps safe Gemini provider debug data for proposal generation failures', async () => {
     const analyzeSafety = vi.fn().mockResolvedValue(safety)
     const analyzeSemantics = vi.fn().mockResolvedValue(semantics)
     const generateProposal = vi.fn().mockRejectedValue({
@@ -124,17 +124,47 @@ describe('createProposalService', () => {
     })
     const service = createProposalService({ analyzeSafety, analyzeSemantics, generateProposal })
 
-    const result = await service.generate({ file: input, idempotencyKey: 'key-gemini-error' })
+    const result = await service.generate({
+      file: input,
+      idempotencyKey: 'key-gemini-error',
+      debug: true
+    })
 
     expect(result).toEqual({
       status: 'error',
       code: 'proposal-generation-failed',
-      diagnostics: {
-        provider: 'gemini',
-        statusCode: 503,
-        providerCode: 'ServiceUnavailable'
+      debug: {
+        semanticAnalysis: semantics,
+        provider: {
+          provider: 'gemini',
+          statusCode: 503,
+          providerCode: 'ServiceUnavailable'
+        }
       }
     })
+  })
+
+  it('returns semantic debug data without caching the debug result', async () => {
+    const analyzeSafety = vi.fn().mockResolvedValue(safety)
+    const analyzeSemantics = vi.fn().mockResolvedValue(semantics)
+    const generateProposal = vi.fn().mockResolvedValue(proposals)
+    const service = createProposalService({ analyzeSafety, analyzeSemantics, generateProposal })
+
+    const debugResult = await service.generate({
+      file: input,
+      idempotencyKey: 'key-debug',
+      debug: true
+    })
+    const normalResult = await service.generate({ file: input, idempotencyKey: 'key-debug' })
+
+    expect(debugResult).toEqual({
+      status: 'success',
+      proposals,
+      debug: { semanticAnalysis: semantics }
+    })
+    expect(normalResult).toEqual({ status: 'success', proposals })
+    expect(analyzeSemantics).toHaveBeenCalledTimes(2)
+    expect(generateProposal).toHaveBeenCalledTimes(2)
   })
 
   it('replays the outcome for the same key and rejects a different payload', async () => {

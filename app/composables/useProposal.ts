@@ -100,6 +100,7 @@ export function useProposal() {
         method: 'POST',
         headers: {
           'Idempotency-Key': idempotencyKey
+          // 'X-Proposal-Debug': '1' // debug 用
         },
         body
       })
