@@ -8,7 +8,8 @@ export default defineNuxtConfig({
     proposalProviderMode: 'mock',
     azureContentSafetyEndpoint: '',
     azureContentSafetyApiKey: '',
-    geminiApiKey: ''
+    geminiApiKey: '',
+    geminiSemanticModel: ''
   },
   modules: ['@nuxt/eslint', '@nuxt/icon', '@nuxt/test-utils/module'],
   css: ['~/assets/css/main.css'],

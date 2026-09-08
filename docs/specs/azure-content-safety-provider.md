@@ -81,7 +81,7 @@ interface ContentSafetyAssessment {
 1. Provider 使用 `isUnexpected(result)` 判斷 SDK response 是否為非成功結果。
 2. Provider 不回傳原始 SDK response，也不暴露 API Key；只保留 HTTP status 與 Azure `error.code`。
 3. `image-feasibility.service.ts` 沿用既有 `withRetry`，並將 provider error 分類為 configuration、authentication、invalid request、transient 或 malformed response。
-4. development 可透過 API diagnostics 與 Server console 查看 provider、status code 與 provider code；production 不輸出 console，也不回傳 diagnostics。
+4. development 可透過帶有 `X-Proposal-Debug: 1` 的 API request，在 `debug.provider` 與 Server console 查看 provider、status code 與 provider code；production 不輸出 console，也不回傳 `debug`。
 5. `useProposal.ts` 只接收 API 層的穩定錯誤碼，不處理 Azure SDK 細節。
 
 ## Runtime config
@@ -120,14 +120,14 @@ Azure severity > 0
   → 不呼叫 proposal generation
 ```
 
-若 Azure 四個 category 的 severity 都是 `0`，流程才會進入 Gemini。由於 Gemini provider 目前尚未完成，安全通過的完整 proposal flow 仍可能在後續失敗；這不影響驗證 Azure 安全拒絕短路行為。
+若 Azure 四個 category 的 severity 都是 `0`，流程才會進入 Gemini semantic analysis。Proposal generation 仍維持未實作，因此安全通過的完整 proposal flow 仍可能在後續失敗；這不影響驗證 Azure 安全拒絕短路行為。
 
 ## 需要調整的檔案
 
 - `server/providers/azure-content-safety.ts`：建立 SDK client、Base64 轉換、response mapping 與 provider error boundary。
 - `server/utils/providers/error.ts`：正規化 provider status、error code 與重試分類。
 - `server/utils/providers/factory.ts`：依 runtime mode 組合 mock 或真實 provider。
-- `server/services/image-feasibility.service.ts`：將 provider error 轉為穩定錯誤碼與安全 diagnostics。
+- `server/services/image-feasibility.service.ts`：將 provider error 轉為穩定錯誤碼與安全 `debug.provider`。
 - `server/api/proposal.post.ts`：依 `NUXT_PROPOSAL_PROVIDER_MODE` 選擇 mock 或真實 provider，development 預設仍使用 mock。
 - `.env.example`：加入不含秘密的環境變數範例。
 - `tests/unit/azure-content-safety.test.ts`：測試 request payload、四類 category、severity、缺少欄位與錯誤 response。
@@ -146,5 +146,5 @@ Azure severity > 0
 - `Hate: 0` 等安全結果會產生全為 `0` 的標準化資料。
 - Provider 使用 `ProviderImageInput.bytes`，不依賴檔案路徑。
 - API Key 僅存在 Server private runtime config。
-- Azure 原始錯誤與 payload 不會傳到前端；development 僅提供安全的 provider、status code 與 provider code diagnostics。
+- Azure 原始錯誤與 payload 不會傳到前端；development 僅在明確 opt-in 時提供安全的 `debug.provider`。
 - 既有 unit、Nuxt、lint 與 typecheck 通過。

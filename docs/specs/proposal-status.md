@@ -259,7 +259,7 @@ Provider、網路或 Server 執行失敗時，對外只回傳穩定的錯誤 cod
 - `provider-unavailable`：`503`，可重試。
 - `provider-request-failed`、`malformed-provider-response`：`502`。
 
-Development 可額外回傳安全的 `diagnostics`：`provider`、`statusCode` 與 `providerCode`，並在 Server console 記錄相同資訊；production 不輸出 console，也不回傳 `diagnostics`。
+Development 只有在 request 帶有 `X-Proposal-Debug: 1` 時，才額外回傳安全的 `debug.provider`：`provider`、`statusCode` 與 `providerCode`，並在 Server console 記錄相同資訊；production 不輸出 console，也不回傳 `debug`。
 
 ```json
 {
