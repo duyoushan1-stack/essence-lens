@@ -3,6 +3,10 @@ import type { ProposalService, ProposalServiceResult } from '../services/proposa
 
 const getRequestId = () => crypto.randomUUID()
 
+interface ProposalHandlerOptions {
+  isDevelopment?: boolean
+}
+
 const toErrorStatusCode = (code: ProposalApiErrorResponse['code']) => {
   if (code === 'provider-unavailable') {
     return 503
@@ -26,20 +30,25 @@ const toErrorStatusCode = (code: ProposalApiErrorResponse['code']) => {
 export const toApiErrorResponse = (
   requestId: string,
   result: Extract<ProposalServiceResult, { status: 'error' }>,
-  includeDiagnostics = import.meta.dev
+  includeDebug = import.meta.dev
 ): ProposalApiErrorResponse => ({
   status: 'error',
   requestId,
   code: result.code,
-  ...(includeDiagnostics && result.diagnostics ? { diagnostics: result.diagnostics } : {})
+  ...(includeDebug && result.debug ? { debug: result.debug } : {})
 })
 
-const toResponse = (requestId: string, result: ProposalServiceResult) => {
+const toResponse = (
+  requestId: string,
+  result: ProposalServiceResult,
+  isDevelopment = import.meta.dev
+) => {
   if (result.status === 'success') {
     const response: ProposalApiSuccessResponse = {
       status: 'success',
       requestId,
-      proposals: result.proposals
+      proposals: result.proposals,
+      ...(isDevelopment && result.debug ? { debug: result.debug } : {})
     }
     return response
   }
@@ -48,7 +57,8 @@ const toResponse = (requestId: string, result: ProposalServiceResult) => {
     const response: ProposalApiRejectedResponse = {
       status: 'rejected',
       requestId,
-      reasons: result.reasons
+      reasons: result.reasons,
+      ...(isDevelopment && result.debug ? { debug: result.debug } : {})
     }
     throw createError({ statusCode: 422, data: response })
   }
@@ -60,17 +70,25 @@ const toResponse = (requestId: string, result: ProposalServiceResult) => {
     })
   }
 
-  const response = toApiErrorResponse(requestId, result)
+  const response = toApiErrorResponse(requestId, result, isDevelopment)
 
-  if (import.meta.dev && response.diagnostics) {
-    console.error('[proposal provider error]', response)
+  if (isDevelopment && response.debug) {
+    useNitroApp().captureError(new Error('Proposal provider error'), {
+      tags: ['proposal-provider'],
+      response
+    })
   }
 
   throw createError({ statusCode: toErrorStatusCode(result.code), data: response })
 }
 
-export const createProposalHandler = (proposalService?: ProposalService) =>
-  defineEventHandler(async (event) => {
+export const createProposalHandler = (
+  proposalService?: ProposalService,
+  options: ProposalHandlerOptions = {}
+) => {
+  const isDevelopment = options.isDevelopment ?? import.meta.dev
+
+  return defineEventHandler(async (event) => {
     const requestId = getRequestId()
     let parts: Awaited<ReturnType<typeof readMultipartFormData>>
 
@@ -85,6 +103,7 @@ export const createProposalHandler = (proposalService?: ProposalService) =>
 
     const filePart = parts?.find((part) => part.name === 'file')
     const idempotencyKey = getHeader(event, 'Idempotency-Key')?.trim()
+    const debugRequested = isDevelopment && getHeader(event, 'X-Proposal-Debug') === '1'
 
     if (!filePart || !idempotencyKey) {
       throw createError({
@@ -102,14 +121,16 @@ export const createProposalHandler = (proposalService?: ProposalService) =>
           mimeType: filePart.type ?? '',
           filename: filePart.filename ?? 'upload'
         },
-        idempotencyKey
+        idempotencyKey,
+        ...(debugRequested ? { debug: true } : {})
       })
     } catch {
       // 將非預期的 service 例外收斂在公開 API error contract 內。
-      return toResponse(requestId, { status: 'error', code: 'server-failure' })
+      return toResponse(requestId, { status: 'error', code: 'server-failure' }, isDevelopment)
     }
 
-    return toResponse(requestId, result)
+    return toResponse(requestId, result, isDevelopment)
   })
+}
 
 export default createProposalHandler()

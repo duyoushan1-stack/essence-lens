@@ -3,15 +3,19 @@ import { evaluateImageFeasibilityForFile } from './image-feasibility.service'
 import { createImageFingerprint } from '../utils/image-fingerprint'
 import { normalizeProviderError } from '../utils/providers/error'
 import { withRetry } from '../utils/retry-policy'
+import type { ProposalDebugInfo } from '../../shared/types/proposal'
 
 export interface ProposalPipelineInput {
   file: ProviderImageInput
   idempotencyKey: string
+  debug?: boolean
 }
 
 export type ProposalPipelineResult = ProposalOutcome
 
-export type ProposalServiceResult = ProposalPipelineResult | { status: 'conflict' }
+export type ProposalServiceOutcome = ProposalPipelineResult & { debug?: ProposalDebugInfo }
+
+export type ProposalServiceResult = ProposalServiceOutcome | { status: 'conflict' }
 
 export interface ProposalService {
   generate(input: ProposalPipelineInput): Promise<ProposalServiceResult>
@@ -29,8 +33,8 @@ export const createProposalService = (
 ): ProposalService => {
   const executePipeline = async ({
     file
-  }: ProposalPipelineInput): Promise<ProposalPipelineResult> => {
-    const feasibility = await evaluateImageFeasibilityForFile(file, dependencies)
+  }: ProposalPipelineInput, includeDebug: boolean): Promise<ProposalServiceOutcome> => {
+    const feasibility = await evaluateImageFeasibilityForFile(file, dependencies, { includeDebug })
 
     if (feasibility.status === 'rejected' || feasibility.status === 'error') {
       return feasibility
@@ -38,22 +42,33 @@ export const createProposalService = (
 
     try {
       const proposals = await withRetry(() => dependencies.generateProposal(feasibility.context))
-      return { status: 'success', proposals }
+      return {
+        status: 'success',
+        proposals,
+        ...(includeDebug && feasibility.debug ? { debug: feasibility.debug } : {})
+      }
     } catch (error: unknown) {
       const normalizedError = normalizeProviderError(error, 'gemini')
 
       return {
         status: 'error',
         code: mapProposalError(),
-        diagnostics: {
-          provider: normalizedError.provider ?? 'gemini',
-          ...(normalizedError.statusCode !== undefined
-            ? { statusCode: normalizedError.statusCode }
-            : {}),
-          ...(normalizedError.providerCode !== undefined
-            ? { providerCode: normalizedError.providerCode }
-            : {})
-        }
+        ...(includeDebug
+          ? {
+              debug: {
+                ...(feasibility.debug ?? {}),
+                provider: {
+                  provider: normalizedError.provider ?? 'gemini',
+                  ...(normalizedError.statusCode !== undefined
+                    ? { statusCode: normalizedError.statusCode }
+                    : {}),
+                  ...(normalizedError.providerCode !== undefined
+                    ? { providerCode: normalizedError.providerCode }
+                    : {})
+                }
+              }
+            }
+          : {})
       }
     }
   }
@@ -72,7 +87,7 @@ export const createProposalService = (
       input: ProposalPipelineInput & { fingerprint: string }
     ): Promise<CachedProposalResult> => ({
       fingerprint: input.fingerprint,
-      outcome: await executePipeline(input)
+      outcome: await executePipeline(input, false)
     }),
     {
       name: 'proposal-pipeline-idempotency',
@@ -84,8 +99,16 @@ export const createProposalService = (
 
   return {
     async generate(input) {
+      if (input.debug) {
+        return executePipeline(input, true)
+      }
+
       const fingerprint = createImageFingerprint(input.file)
-      const cachedResult = await cachedPipeline({ ...input, fingerprint })
+      const cachedResult = await cachedPipeline({
+        file: input.file,
+        idempotencyKey: input.idempotencyKey,
+        fingerprint
+      })
 
       if (cachedResult.fingerprint !== fingerprint) {
         return { status: 'conflict' }

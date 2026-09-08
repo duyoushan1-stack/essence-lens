@@ -30,15 +30,21 @@ export type ProposalErrorCode =
   | 'proposal-generation-failed'
   | 'server-failure'
 
-/** 僅供 development 診斷使用的安全 Provider 資訊，不包含原始錯誤訊息或 payload。 */
-export interface ProposalErrorDiagnostics {
+/** 僅供 development debug 使用的安全 Provider 資訊，不包含原始錯誤訊息或 payload。 */
+export interface ProposalDebugProviderInfo {
   provider: string
   statusCode?: number
   providerCode?: string
+}
+
+/** 開發環境可選擇回傳的安全觀察資料。 */
+export interface ProposalDebugInfo {
+  provider?: ProposalDebugProviderInfo
+  semanticAnalysis?: ImageSemanticAnalysis
 }
 
 /** 提案業務流程的最終結果，不包含請求追蹤資訊或 UI 過渡狀態。 */
 export type ProposalOutcome =
   | { status: 'success'; proposals: Proposal[] }
   | { status: 'rejected'; reasons: ProposalRejectionReason[] }
-  | { status: 'error'; code: ProposalErrorCode; diagnostics?: ProposalErrorDiagnostics }
+  | { status: 'error'; code: ProposalErrorCode }
