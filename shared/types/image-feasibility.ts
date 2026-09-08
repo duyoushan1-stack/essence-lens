@@ -1,3 +1,7 @@
+import type { ImageSemanticAnalysis } from '../schemas/image-semantic-analysis'
+
+export type { ImageSemanticAnalysis }
+
 export type ContentSafetySeverity = 0 | 2 | 4 | 6
 
 export type ContentSafetyCategory = 'hate' | 'self-harm' | 'sexual' | 'violence'
@@ -7,39 +11,11 @@ export interface ContentSafetyAssessment {
   categories: Record<ContentSafetyCategory, ContentSafetySeverity>
 }
 
-export type SemanticSignal = 'absent' | 'present' | 'unknown'
+export type SemanticSignal = ImageSemanticAnalysis['subjects']['isSelfie']
 
-export type BlurLevel = 'none' | 'mild' | 'severe' | 'unknown'
+export type BlurLevel = ImageSemanticAnalysis['quality']['blur']
 
-export type SceneCategory = 'indoor' | 'outdoor' | 'nature' | 'urban' | 'unknown'
-
-export interface ImageSemanticAnalysis {
-  schemaVersion: string
-  scene: {
-    category: SceneCategory
-    recognizable: boolean
-  }
-  subjects: {
-    peopleCount: number | null
-    isSelfie: SemanticSignal
-    hasProductFocus: SemanticSignal
-    hasPetCloseup: SemanticSignal
-    isMemeLike: SemanticSignal
-  }
-  quality: {
-    blur: BlurLevel
-    isSolidColor: SemanticSignal
-    informationSufficient: boolean
-  }
-  safety: {
-    nudity: SemanticSignal
-    sexual: SemanticSignal
-    violence: SemanticSignal
-    gore: SemanticSignal
-  }
-  visualMood: string[]
-  usefulObjects: string[]
-}
+export type SceneCategory = ImageSemanticAnalysis['scene']['category']
 
 export type SafetyReasonCode = 'hate' | 'self-harm' | 'sexual' | 'violence' | 'nudity' | 'gore'
 
