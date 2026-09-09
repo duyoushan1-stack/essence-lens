@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ProviderImageInput } from '../../server/providers/provider.types'
-import { analyzeImageSafety } from '../../server/providers/azure-content-safety'
+import type { AnalyzeSafety, ProviderImageInput } from '../../server/providers/provider.types'
+import { createAzureContentSafetyProvider } from '../../server/providers/azure-content-safety'
 
 const { clientFactory, credentialFactory, isUnexpectedMock, pathMock, postMock } = vi.hoisted(
   () => ({
@@ -34,12 +34,14 @@ const input: ProviderImageInput = {
   filename: 'sample.jpg'
 }
 
+let analyzeImageSafety: AnalyzeSafety
+
 describe('analyzeImageSafety', () => {
   beforeEach(() => {
-    vi.stubGlobal('useRuntimeConfig', () => ({
-      azureContentSafetyEndpoint: 'https://example.cognitiveservices.azure.com/',
-      azureContentSafetyApiKey: 'test-key'
-    }))
+    analyzeImageSafety = createAzureContentSafetyProvider({
+      endpoint: 'https://example.cognitiveservices.azure.com/',
+      apiKey: 'test-key'
+    })
     clientFactory.mockReturnValue({ path: pathMock })
     pathMock.mockReturnValue({ post: postMock })
     isUnexpectedMock.mockReturnValue(false)

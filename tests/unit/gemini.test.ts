@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ImageSemanticAnalysis } from '../../shared/types/image-feasibility'
-import type { ProviderImageInput } from '../../server/providers/provider.types'
+import type { AnalyzeSemantics, ProviderImageInput } from '../../server/providers/provider.types'
+import { createGeminiSemanticProvider } from '../../server/providers/gemini'
 import { imageSemanticAnalysisJsonSchema } from '../../shared/schemas/image-semantic-analysis'
 
 const { generateContentMock, GoogleGenAIMock } = vi.hoisted(() => ({
@@ -10,8 +11,7 @@ const { generateContentMock, GoogleGenAIMock } = vi.hoisted(() => ({
 
 vi.mock('@google/genai', () => ({ GoogleGenAI: GoogleGenAIMock }))
 
-type GeminiModule = typeof import('../../server/providers/gemini')
-let analyzeImageSemantics: GeminiModule['analyzeImageSemantics']
+let analyzeImageSemantics: AnalyzeSemantics
 
 const input: ProviderImageInput = {
   bytes: new Uint8Array([1, 2, 3]),
@@ -44,11 +44,7 @@ const semanticAnalysis: ImageSemanticAnalysis = {
   usefulObjects: ['trees']
 }
 
-beforeEach(async () => {
-  vi.stubGlobal('useRuntimeConfig', () => ({
-    geminiApiKey: 'test-gemini-key',
-    geminiSemanticModel: 'gemini-3.7-flash'
-  }))
+beforeEach(() => {
   generateContentMock.mockReset()
   GoogleGenAIMock.mockReset()
   GoogleGenAIMock.mockImplementation(function () {
@@ -57,8 +53,10 @@ beforeEach(async () => {
     }
   })
 
-  const geminiModule = await import('../../server/providers/gemini')
-  analyzeImageSemantics = geminiModule.analyzeImageSemantics
+  analyzeImageSemantics = createGeminiSemanticProvider({
+    apiKey: 'test-gemini-key',
+    model: 'gemini-3.7-flash'
+  })
 })
 
 describe('analyzeImageSemantics', () => {
@@ -137,9 +135,9 @@ describe('analyzeImageSemantics', () => {
   })
 
   it('rejects missing Gemini configuration before creating the client', async () => {
-    vi.stubGlobal('useRuntimeConfig', () => ({ geminiApiKey: '' }))
+    const missingConfigProvider = createGeminiSemanticProvider({ apiKey: '', model: '' })
 
-    await expect(analyzeImageSemantics(input)).rejects.toEqual({
+    await expect(missingConfigProvider(input)).rejects.toEqual({
       provider: 'gemini',
       code: 'missing-configuration'
     })

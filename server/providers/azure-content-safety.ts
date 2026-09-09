@@ -7,6 +7,11 @@ import type {
 } from '../../shared/types/image-feasibility'
 import type { AnalyzeSafety, ProviderImageInput } from './provider.types'
 
+export interface AzureContentSafetyConfig {
+  endpoint: string
+  apiKey: string
+}
+
 const CATEGORY_MAP = {
   Hate: 'hate',
   SelfHarm: 'self-harm',
@@ -109,31 +114,31 @@ const toContentSafetyAssessment = (value: unknown): ContentSafetyAssessment => {
   }
 }
 
-export const analyzeImageSafety: AnalyzeSafety = async (
-  input: ProviderImageInput
-): Promise<ContentSafetyAssessment> => {
-  const config = useRuntimeConfig()
-
-  if (!config.azureContentSafetyEndpoint || !config.azureContentSafetyApiKey) {
-    throw new AzureContentSafetyRequestError(undefined, 'missing-configuration')
-  }
-
-  const client = ContentSafetyClient(
-    config.azureContentSafetyEndpoint,
-    new AzureKeyCredential(config.azureContentSafetyApiKey)
-  )
-
-  const result = await client.path('/image:analyze').post({
-    body: {
-      image: { content: Buffer.from(input.bytes).toString('base64') },
-      categories: ['Hate', 'SelfHarm', 'Sexual', 'Violence'],
-      outputType: 'FourSeverityLevels'
+export const createAzureContentSafetyProvider = (
+  config: AzureContentSafetyConfig
+): AnalyzeSafety => {
+  return async (input: ProviderImageInput): Promise<ContentSafetyAssessment> => {
+    if (!config.endpoint || !config.apiKey) {
+      throw new AzureContentSafetyRequestError(undefined, 'missing-configuration')
     }
-  })
 
-  if (isUnexpected(result)) {
-    throw new AzureContentSafetyRequestError(getStatusCode(result), getProviderCode(result))
+    const client = ContentSafetyClient(
+      config.endpoint,
+      new AzureKeyCredential(config.apiKey)
+    )
+
+    const result = await client.path('/image:analyze').post({
+      body: {
+        image: { content: Buffer.from(input.bytes).toString('base64') },
+        categories: ['Hate', 'SelfHarm', 'Sexual', 'Violence'],
+        outputType: 'FourSeverityLevels'
+      }
+    })
+
+    if (isUnexpected(result)) {
+      throw new AzureContentSafetyRequestError(getStatusCode(result), getProviderCode(result))
+    }
+
+    return toContentSafetyAssessment(result.body.categoriesAnalysis)
   }
-
-  return toContentSafetyAssessment(result.body.categoriesAnalysis)
 }

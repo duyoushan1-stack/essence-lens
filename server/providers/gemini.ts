@@ -6,6 +6,11 @@ import {
 import type { ImageSemanticAnalysis } from '../../shared/types/image-feasibility'
 import type { AnalyzeSemantics, GenerateProposal } from './provider.types'
 
+export interface GeminiSemanticConfig {
+  apiKey: string
+  model: string
+}
+
 const SEMANTIC_ANALYSIS_PROMPT = `Analyze this image for a visual recommendation pipeline.
 
 Return only JSON that matches the provided response schema.
@@ -133,39 +138,41 @@ const parseImageSemanticAnalysis = (text: string | undefined): ImageSemanticAnal
   return result.data
 }
 
-export const analyzeImageSemantics: AnalyzeSemantics = async (input) => {
-  const { geminiApiKey, geminiSemanticModel } = useRuntimeConfig()
+export const createGeminiSemanticProvider = (
+  config: GeminiSemanticConfig
+): AnalyzeSemantics => {
+  return async (input) => {
+    if (!config.apiKey || !config.model) {
+      return createGeminiError('missing-configuration')
+    }
 
-  if (!geminiApiKey || !geminiSemanticModel) {
-    return createGeminiError('missing-configuration')
+    const ai = new GoogleGenAI({ apiKey: config.apiKey })
+    let response: GenerateContentResponse
+
+    try {
+      response = await ai.models.generateContent({
+        model: config.model,
+        contents: [
+          {
+            inlineData: {
+              mimeType: input.mimeType,
+              data: Buffer.from(input.bytes).toString('base64')
+            }
+          },
+          { text: SEMANTIC_ANALYSIS_PROMPT }
+        ],
+        config: {
+          maxOutputTokens: 1024,
+          responseMimeType: 'application/json',
+          responseJsonSchema: imageSemanticAnalysisJsonSchema
+        }
+      })
+    } catch (error: unknown) {
+      throw toGeminiRequestError(error)
+    }
+
+    return parseImageSemanticAnalysis(response.text)
   }
-
-  const ai = new GoogleGenAI({ apiKey: geminiApiKey })
-  let response: GenerateContentResponse
-
-  try {
-    response = await ai.models.generateContent({
-      model: geminiSemanticModel,
-      contents: [
-        {
-          inlineData: {
-            mimeType: input.mimeType,
-            data: Buffer.from(input.bytes).toString('base64')
-          }
-        },
-        { text: SEMANTIC_ANALYSIS_PROMPT }
-      ],
-      config: {
-        maxOutputTokens: 1024,
-        responseMimeType: 'application/json',
-        responseJsonSchema: imageSemanticAnalysisJsonSchema
-      }
-    })
-  } catch (error: unknown) {
-    throw toGeminiRequestError(error)
-  }
-
-  return parseImageSemanticAnalysis(response.text)
 }
 
 export const generateProposal: GenerateProposal = async (
