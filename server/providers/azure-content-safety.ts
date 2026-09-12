@@ -5,7 +5,7 @@ import type {
   ContentSafetyCategory,
   ContentSafetySeverity
 } from '../../shared/types/image-feasibility'
-import type { AnalyzeSafety, ProviderImageInput } from './provider.types'
+import type { AnalyzeSafety } from './provider.types'
 
 export interface AzureContentSafetyConfig {
   endpoint: string
@@ -117,15 +117,12 @@ const toContentSafetyAssessment = (value: unknown): ContentSafetyAssessment => {
 export const createAzureContentSafetyProvider = (
   config: AzureContentSafetyConfig
 ): AnalyzeSafety => {
-  return async (input: ProviderImageInput): Promise<ContentSafetyAssessment> => {
+  return async (input) => {
     if (!config.endpoint || !config.apiKey) {
       throw new AzureContentSafetyRequestError(undefined, 'missing-configuration')
     }
 
-    const client = ContentSafetyClient(
-      config.endpoint,
-      new AzureKeyCredential(config.apiKey)
-    )
+    const client = ContentSafetyClient(config.endpoint, new AzureKeyCredential(config.apiKey))
 
     const result = await client.path('/image:analyze').post({
       body: {

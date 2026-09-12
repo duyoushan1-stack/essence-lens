@@ -1,4 +1,4 @@
-import { GoogleGenAI, type GenerateContentResponse } from '@google/genai'
+import { GoogleGenAI } from '@google/genai'
 import {
   imageSemanticAnalysisJsonSchema,
   imageSemanticAnalysisSchema
@@ -138,40 +138,46 @@ const parseImageSemanticAnalysis = (text: string | undefined): ImageSemanticAnal
   return result.data
 }
 
-export const createGeminiSemanticProvider = (
-  config: GeminiSemanticConfig
-): AnalyzeSemantics => {
+export const createGeminiSemanticProvider = (config: GeminiSemanticConfig): AnalyzeSemantics => {
   return async (input) => {
     if (!config.apiKey || !config.model) {
       return createGeminiError('missing-configuration')
     }
 
     const ai = new GoogleGenAI({ apiKey: config.apiKey })
-    let response: GenerateContentResponse
+    let outputText: string | undefined
 
     try {
-      response = await ai.models.generateContent({
+      const interaction = await ai.interactions.create({
         model: config.model,
-        contents: [
+        input: [
           {
-            inlineData: {
-              mimeType: input.mimeType,
-              data: Buffer.from(input.bytes).toString('base64')
-            }
+            type: 'image',
+            mime_type: input.mimeType,
+            data: Buffer.from(input.bytes).toString('base64')
           },
-          { text: SEMANTIC_ANALYSIS_PROMPT }
+          {
+            type: 'text',
+            text: SEMANTIC_ANALYSIS_PROMPT
+          }
         ],
-        config: {
-          maxOutputTokens: 1024,
-          responseMimeType: 'application/json',
-          responseJsonSchema: imageSemanticAnalysisJsonSchema
-        }
+        generation_config: {
+          max_output_tokens: 1024
+        },
+        response_format: [
+          {
+            type: 'text',
+            mime_type: 'application/json',
+            schema: imageSemanticAnalysisJsonSchema
+          }
+        ]
       })
+      outputText = interaction.output_text
     } catch (error: unknown) {
       throw toGeminiRequestError(error)
     }
 
-    return parseImageSemanticAnalysis(response.text)
+    return parseImageSemanticAnalysis(outputText)
   }
 }
 
