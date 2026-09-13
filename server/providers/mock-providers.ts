@@ -1,4 +1,4 @@
-import type { ProposalProviderDependencies } from './provider.types'
+import type { GroundedLocation, ProposalDraft, ProposalProviderDependencies } from './provider.types'
 
 const MOCK_SAFETY: ContentSafetyAssessment = {
   provider: 'azure-content-safety',
@@ -25,23 +25,56 @@ const MOCK_SEMANTICS: ImageSemanticAnalysis = {
   usefulObjects: ['street', 'light']
 }
 
-const MOCK_PROPOSALS: Proposal[] = [
+const MOCK_PROPOSAL_DRAFTS: ProposalDraft[] = [
   {
+    locationCandidate: '大安森林公園',
     title: '午後散步與咖啡',
-    description: '到附近街區散步，再找一間安靜的咖啡店休息。'
+    summary: '到附近街區散步，再找一間安靜的咖啡店休息。',
+    perspective: 'nature',
+    itinerary: {
+      morning: { title: '公園散步', description: '在樹影間放慢腳步。' },
+      noon: { title: '街區午餐', description: '找一間在地小店用餐。' },
+      afternoon: { title: '咖啡與閱讀', description: '選一個靠窗的位置休息。' }
+    },
+    cover: { imagePrompt: 'A calm tree-lined urban afternoon, editorial travel photography.' }
   },
   {
-    title: '沿街慢慢走',
-    description: '沿著熟悉的街區走一小段，留意平常忽略的細節。'
+    title: '海風午後小旅行',
+    locationCandidate: '淡水老街',
+    summary: '沿著水岸吹風，把午後留給開闊的藍色風景與一頓慢午餐。',
+    perspective: 'coast',
+    itinerary: {
+      morning: { title: '水岸看景', description: '找一段開闊的水岸迎接風。' },
+      noon: { title: '海邊午餐', description: '選一間能看見風景的小店。' },
+      afternoon: { title: '咖啡看潮', description: '用一杯咖啡替午後留白。' }
+    },
+    cover: { imagePrompt: 'A quiet seaside afternoon with a broad horizon, editorial travel photography.' }
   },
   {
-    title: '黃昏取景',
-    description: '在日落前找一個安靜的位置，替今天留下畫面。'
+    title: '老街微光散策',
+    locationCandidate: '迪化街',
+    summary: '穿過有故事的街區，從在地味道與老屋細節認識一座城市。',
+    perspective: 'culture',
+    itinerary: {
+      morning: { title: '老街尋光', description: '沿著老屋與街角慢慢逛。' },
+      noon: { title: '在地小吃', description: '挑一間有地方味道的小店。' },
+      afternoon: { title: '選物慢看', description: '把時間留給一間有趣的小店。' }
+    },
+    cover: { imagePrompt: 'A warm heritage street at golden hour with small local shops, editorial travel photography.' }
   }
+]
+
+/** 僅供 development mock 展示，不代表本次 request 執行過 Maps 查證。 */
+const MOCK_LOCATIONS: GroundedLocation[] = [
+  { name: '大安森林公園', address: '臺北市大安區新生南路二段', sourceUrl: 'https://www.google.com/maps/search/?api=1&query=大安森林公園', reason: 'Development fixture', suggestedActivities: ['Walk along the park paths'] },
+  { name: '淡水老街', address: '新北市淡水區中正路', sourceUrl: 'https://www.google.com/maps/search/?api=1&query=淡水老街', reason: 'Development fixture', suggestedActivities: ['Walk along the street'] },
+  { name: '迪化街', address: '臺北市大同區迪化街一段', sourceUrl: 'https://www.google.com/maps/search/?api=1&query=迪化街', reason: 'Development fixture', suggestedActivities: ['Observe historic shopfronts'] }
 ]
 
 export const createMockProposalProviders = (): ProposalProviderDependencies => ({
   analyzeSafety: async () => MOCK_SAFETY,
   analyzeSemantics: async () => MOCK_SEMANTICS,
-  generateProposal: async () => MOCK_PROPOSALS
+  groundLocations: async () => MOCK_LOCATIONS,
+  generateProposal: async () => MOCK_PROPOSAL_DRAFTS,
+  generateProposalImage: async () => null
 })

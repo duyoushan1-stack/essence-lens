@@ -13,10 +13,14 @@ describe('createMockProposalProviders', () => {
     const safety = await providers.analyzeSafety(input)
     const semantics = await providers.analyzeSemantics(input)
     const proposals = await providers.generateProposal({
-      scene: semantics.scene,
-      subjects: semantics.subjects,
-      visualMood: semantics.visualMood,
-      usefulObjects: semantics.usefulObjects
+      analysis: {
+        scene: semantics.scene,
+        subjects: semantics.subjects,
+        visualMood: semantics.visualMood,
+        usefulObjects: semantics.usefulObjects
+      },
+      locations: [],
+      locale: 'zh-TW'
     })
 
     expect(Object.values(safety.categories).every((severity) => severity === 0)).toBe(true)
