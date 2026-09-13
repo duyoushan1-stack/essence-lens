@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ImageSemanticAnalysis } from '../../shared/types/image-feasibility'
 import type { AnalyzeSemantics, ProviderImageInput } from '../../server/providers/provider.types'
-import { createGeminiSemanticProvider } from '../../server/providers/gemini'
+import {
+  createGeminiAnalysisProvider,
+  createGeminiClient
+} from '../../server/providers/gemini/index'
 import { imageSemanticAnalysisJsonSchema } from '../../shared/schemas/image-semantic-analysis'
 
-const { generateContentMock, GoogleGenAIMock } = vi.hoisted(() => ({
-  generateContentMock: vi.fn(),
+const { interactionsCreateMock, GoogleGenAIMock } = vi.hoisted(() => ({
+  interactionsCreateMock: vi.fn(),
   GoogleGenAIMock: vi.fn()
 }))
 
@@ -45,16 +48,16 @@ const semanticAnalysis: ImageSemanticAnalysis = {
 }
 
 beforeEach(() => {
-  generateContentMock.mockReset()
+  interactionsCreateMock.mockReset()
   GoogleGenAIMock.mockReset()
   GoogleGenAIMock.mockImplementation(function () {
     return {
-      models: { generateContent: generateContentMock }
+      interactions: { create: interactionsCreateMock }
     }
   })
 
-  analyzeImageSemantics = createGeminiSemanticProvider({
-    apiKey: 'test-gemini-key',
+  analyzeImageSemantics = createGeminiAnalysisProvider({
+    client: createGeminiClient('test-gemini-key'),
     model: 'gemini-3.7-flash'
   })
 })
@@ -86,43 +89,51 @@ describe('analyzeImageSemantics', () => {
   })
 
   it('sends inline image data with structured JSON output and parses the response', async () => {
-    generateContentMock.mockResolvedValue({ text: JSON.stringify(semanticAnalysis) })
+    interactionsCreateMock.mockResolvedValue({ output_text: JSON.stringify(semanticAnalysis) })
 
     const result = await analyzeImageSemantics(input)
 
     expect(result).toEqual(semanticAnalysis)
     expect(GoogleGenAIMock).toHaveBeenCalledWith({ apiKey: 'test-gemini-key' })
-    expect(generateContentMock).toHaveBeenCalledWith({
+    expect(interactionsCreateMock).toHaveBeenCalledWith({
       model: 'gemini-3.7-flash',
-      contents: [
+      input: [
         {
-          inlineData: {
-            mimeType: 'image/jpeg',
-            data: Buffer.from(input.bytes).toString('base64')
-          }
+          type: 'image',
+          mime_type: 'image/jpeg',
+          data: Buffer.from(input.bytes).toString('base64')
         },
-        { text: expect.any(String) }
+        {
+          type: 'text',
+          text: expect.any(String)
+        }
       ],
-      config: {
-        maxOutputTokens: 1024,
-        responseMimeType: 'application/json',
-        responseJsonSchema: imageSemanticAnalysisJsonSchema
-      }
+      generation_config: {
+        max_output_tokens: 1024
+      },
+      response_format: [
+        {
+          type: 'text',
+          mime_type: 'application/json',
+          schema: imageSemanticAnalysisJsonSchema
+        }
+      ]
     })
   })
 
   it('rejects invalid JSON as a malformed provider response', async () => {
-    generateContentMock.mockResolvedValue({ text: '{invalid-json' })
+    interactionsCreateMock.mockResolvedValue({ output_text: '{invalid-json' })
 
     await expect(analyzeImageSemantics(input)).rejects.toEqual({
       provider: 'gemini',
-      code: 'schema-validation-failed'
+      code: 'schema-validation-failed',
+      stage: 'semantic-analysis'
     })
   })
 
   it('rejects JSON that does not match the semantic schema', async () => {
-    generateContentMock.mockResolvedValue({
-      text: JSON.stringify({
+    interactionsCreateMock.mockResolvedValue({
+      output_text: JSON.stringify({
         ...semanticAnalysis,
         quality: { ...semanticAnalysis.quality, blur: 'crisp' }
       })
@@ -130,18 +141,25 @@ describe('analyzeImageSemantics', () => {
 
     await expect(analyzeImageSemantics(input)).rejects.toEqual({
       provider: 'gemini',
-      code: 'schema-validation-failed'
+      code: 'schema-validation-failed',
+      stage: 'semantic-analysis',
+      validationIssues: [
+        {
+          path: 'quality.blur',
+          code: 'invalid_value'
+        }
+      ]
     })
   })
 
   it('rejects missing Gemini configuration before creating the client', async () => {
-    const missingConfigProvider = createGeminiSemanticProvider({ apiKey: '', model: '' })
+    const missingConfigProvider = createGeminiAnalysisProvider({ client: null, model: '' })
 
     await expect(missingConfigProvider(input)).rejects.toEqual({
       provider: 'gemini',
       code: 'missing-configuration'
     })
-    expect(GoogleGenAIMock).not.toHaveBeenCalled()
+    expect(GoogleGenAIMock).toHaveBeenCalledTimes(1)
   })
 
   it('preserves the SDK error response while exposing safe provider diagnostics', async () => {
@@ -155,13 +173,43 @@ describe('analyzeImageSemantics', () => {
         }
       })
     }
-    generateContentMock.mockRejectedValueOnce(sdkError)
+    interactionsCreateMock.mockRejectedValueOnce(sdkError)
 
     await expect(analyzeImageSemantics(input)).rejects.toMatchObject({
       name: 'GeminiRequestError',
       provider: 'gemini',
       statusCode: 404,
       providerCode: 'NOT_FOUND',
+      sdkResponse: sdkError
+    })
+  })
+
+  it('unwraps the nested Interactions API error payload for rate limits', async () => {
+    const sdkError = {
+      status: 429,
+      statusCode: 429,
+      error: {
+        error: {
+          code: 429,
+          status: 'RESOURCE_EXHAUSTED',
+          message: 'Rate limit exceeded'
+        }
+      },
+      body: JSON.stringify({
+        error: {
+          code: 429,
+          status: 'RESOURCE_EXHAUSTED',
+          message: 'Rate limit exceeded'
+        }
+      })
+    }
+    interactionsCreateMock.mockRejectedValueOnce(sdkError)
+
+    await expect(analyzeImageSemantics(input)).rejects.toMatchObject({
+      name: 'GeminiRequestError',
+      provider: 'gemini',
+      statusCode: 429,
+      providerCode: 'RESOURCE_EXHAUSTED',
       sdkResponse: sdkError
     })
   })
