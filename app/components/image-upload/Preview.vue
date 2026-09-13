@@ -60,7 +60,7 @@ const formatDimensions = (dimensions: ImageDimensions | null) => {
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="min-w-0">
+      <div class="max-w-[500px]">
         <p class="truncate text-sm font-medium text-ink">{{ fileName }}</p>
         <p v-if="formatDimensions(dimensions)" class="mt-1 text-xs text-muted">
           {{ formatDimensions(dimensions) }}
