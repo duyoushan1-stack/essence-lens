@@ -9,7 +9,12 @@ export default defineNuxtConfig({
     azureContentSafetyEndpoint: '',
     azureContentSafetyApiKey: '',
     geminiApiKey: '',
-    geminiSemanticModel: ''
+    geminiSemanticModel: '',
+    geminiGroundingModel: '',
+    geminiProposalModel: '',
+    agnesApiKey: '',
+    agnesImageModel: 'agnes-image-2.5-flash',
+    agnesApiBaseUrl: 'https://apihub.agnes-ai.com'
   },
   modules: ['@nuxt/eslint', '@nuxt/icon', '@nuxt/test-utils/module'],
   css: ['~/assets/css/main.css'],
