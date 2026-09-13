@@ -108,7 +108,7 @@ API Key 不可放入 `runtimeConfig.public`，也不可提交真實 `.env`。
 
 ## 開發環境行為
 
-目前 development mode 預設使用 mock providers。設定 `NUXT_PROPOSAL_PROVIDER_MODE=azure` 後，才允許 `/api/proposal` 在本機使用真實 provider；此模式會同時使用 Azure 與 Gemini provider。
+目前 development mode 預設使用 mock providers。設定 `NUXT_PROPOSAL_PROVIDER_MODE=azure` 後，才允許 `/api/proposal` 在本機使用真實 provider；此模式會同時使用 Azure、Gemini 與 Agnes provider。
 
 安全分析先於 Gemini 執行：
 

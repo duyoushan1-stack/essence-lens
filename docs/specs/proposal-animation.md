@@ -28,8 +28,9 @@ VISUAL_DENSITY: 3
 - `ready` 時不顯示空白 result panel。
 - `ready → pending` 時，intro 淡出，圖片預覽移至主要視覺位置，右側顯示狀態訊息。
 - `pending → success / rejected / error` 時，只替換右側內容，不重跑主要圖片位移。
-- success 時支援最多三張提案卡的堆疊與切換。
-- success 卡片預留圖片區，尚未有圖片資料時使用視覺色塊；切換使用 pagination dots。
+- `pending` 時顯示與 Proposal card 結構對齊的 Skeleton loader，讓使用者先看到結果版面。
+- success 時保留最多三張提案卡的堆疊、切換與 Pagination dots。
+- success 卡片預留圖片區，尚未有圖片資料時使用原始圖片 fallback；卡片內文疊在圖片下半部。
 - desktop 與 mobile 的不同目標位置。
 - View Transition API、CSS fallback 與 reduced-motion 行為。
 - 元件卸載、換圖、移除與 retry 的動畫清理。
@@ -38,7 +39,7 @@ VISUAL_DENSITY: 3
 
 - Provider 狀態或 Server pipeline stage 的新增。
 - SSE、WebSocket、polling 或真實的中間進度事件。
-- GSAP 或其他大型動畫套件；卡片 transform 使用已安裝的 `@vueuse/motion`。
+- GSAP 或其他大型動畫套件；結果卡片使用 CSS transition 與原生 focus state。
 - 圖片、proposal 或 request 的永久保存。
 - 將動畫狀態放入 Pinia 或 shared business type。
 
@@ -55,6 +56,7 @@ app/
 │  └─ proposal/
 │     ├─ ProposalFlowStage.vue
 │     ├─ ProposalCardStack.vue
+│     ├─ ProposalSkeleton.vue
 │     └─ ProposalCard.vue
 └─ composables/
    └─ useProposalAnimation.ts
@@ -65,7 +67,8 @@ app/
 | `index.vue`               | 組合既有 flow state、事件與 slots，不直接操作動畫 DOM                         |
 | `ProposalFlowStage.vue`   | 提供 intro、image、status/result slots，依 flow state 選擇 layout class       |
 | `useProposalAnimation.ts` | 封裝 View Transition、fallback、reduced-motion 與 active transition cleanup   |
-| `ProposalCardStack.vue`   | 管理卡片 index、切換操作與卡片視覺堆疊                                        |
+| `ProposalCardStack.vue`   | 限制最多三筆資料，管理 active card、堆疊位置與 Pagination 切換               |
+| `ProposalSkeleton.vue`    | 顯示 pending 期間的 Proposal card 結構 placeholder，不建立 Proposal data       |
 | `ProposalCard.vue`        | 管理單張卡片的 translate、rotate、scale、opacity 與 reduced-motion transition |
 | `ImagePreview.vue`        | 顯示預覽、檔案資訊與更換/生成/移除操作列                                      |
 | `ProposalResultPanel.vue` | 顯示 pending、rejected、error 與 success 內容                                 |
@@ -142,6 +145,36 @@ pending
 5. `pending → success` 不重跑 intro-to-preview movement，只替換內容區。
 6. `pending → rejected/error` 保持 focused layout，顯示對應訊息與操作。
 
+### Pending Proposal skeleton
+
+`pending` 期間由 `ProposalResultPanel` 顯示 `ProposalSkeleton`，不 mount `ProposalCardStack`，也不建立假的 `Proposal`。
+
+Skeleton 結構需與實際卡片的主要版面一致：
+
+```text
+Proposal card shell
+  ├─ cover image placeholder
+  ├─ proposal index placeholder
+  ├─ title placeholder
+  ├─ summary placeholder
+  ├─ morning / noon / afternoon itinerary placeholders
+  └─ location link placeholder
+```
+
+- Skeleton 只使用固定尺寸與中性色塊，不填入假標題、假地點或過期 Proposal 內容。
+- Placeholder 保留卡片圓角、封面比例、內容間距與三段行程的視覺節奏。
+- `ProposalCardStack` 與 `ProposalSkeleton` 共用 `min-h-[35rem] w-full max-w-[28rem]` 的 Tailwind 尺寸，內容不可因封面區而被裁切，短 viewport 時由頁面自然滾動承載完整卡片。
+- pending 與 success 使用相同的 Tailwind 卡片寬度，避免結果狀態造成卡片寬度跳動。
+- Skeleton surface 使用接近 `bg-surface/85` 的淺色 surface，不使用 `bg-ink` 深色卡片背景。
+- 使用輕量 pulse 或 shimmer 表示 loading；不使用大幅位移、旋轉或跳動。
+- Skeleton 不可攔截互動，也不顯示收藏、分頁或外部連結控制項。
+- Pending 狀態不顯示額外 status 文案，以 `aria-busy="true"` 與 Skeleton 表示處理中；Skeleton 本身設為 `aria-hidden="true"`。
+- `pending → success` 時以 content transition 替換成真實 `ProposalCardStack`。
+- `pending → rejected/error` 時移除 Skeleton，顯示對應狀態內容。
+- `prefers-reduced-motion: reduce` 時保留靜態 placeholder，不播放 pulse 或 shimmer。
+
+本專案不因 Skeleton loader 引入 Vuetify；視覺與 animation token 使用既有 Tailwind utilities 與 `main.css`。
+
 ## 8. `useProposalAnimation` 規格
 
 概念介面：
@@ -196,29 +229,25 @@ skip active animation
 
 ```ts
 proposals: Proposal[] // 1 至 3 張
-activeIndex: number   // component local state，預設 0
 ```
 
 行為：
 
-- 最多顯示三張真實 proposal。
-- 頂層卡片可點擊；下方 pagination dots 可直接前往指定卡片。
-- 卡片位置、縮放、z-index 與 opacity 由 `activeIndex` 和卡片 index 推導。
-- `proposals` 改變時將 `activeIndex` 重設為 `0`。
-- 離開 `success`、換圖或移除圖片時元件卸載，local state 自然清除。
-- 沒有三筆資料時，不複製同一 proposal 湊成三張。
-- 卡片切換不發送 request，也不觸發 retry。
-- 必須提供鍵盤可操作的卡片與 pagination dots，以及 focus style。
+- 最多顯示三張真實 proposal，資料不足時不複製同一筆湊數。
+- 三張卡片維持堆疊，只有 active card 顯示完整內容；使用 Pagination dots 切換 active card。
+- active card 可點擊或使用 Enter / Space 切到下一張，非 active card 不攔截互動。
+- 圖片封面比例固定，標題與摘要固定疊在圖片底部，行程文字使用 ellipsis 避免溢出。
+- 行程列顯示左側 icon，地點若有已驗證的 `externalUrl` 才呈現可點擊連結。
+- 離開 `success`、換圖或移除圖片時元件卸載，元件內的收藏 UI state 自然清除。
+- 卡片收藏按鈕與地點連結維持鍵盤 focus style。
 
-卡片的 `translate`、`rotate`、`scale` 與 `opacity` 由 `@vueuse/motion` 的 `useMotion` 控制，使用低 stiffness、高 damping 的 spring；非 active 卡片只保留空白 card shell，不渲染標題與描述，避免文字互相堆疊。
-
-Success contract 使用 `Proposal[]`，最多回傳三張真實 proposal；這是卡片堆疊所需的資料 contract，不是新增狀態。
+Success contract 使用 `Proposal[]`，最多回傳三張真實 proposal；這是卡片 stack 所需的資料 contract，不是新增狀態。
 
 ## 11. Accessibility 與 reduced motion
 
 - pending/result 容器維持既有 `aria-live` 與 `aria-busy`。
 - 動畫不可是傳達狀態的唯一方式，文字結果必須在 DOM 中可讀取。
-- 卡片切換控制項需有可讀 label、keyboard focus 與 disabled 狀態。
+- 收藏按鈕與地點連結需有可讀 label、keyboard focus 與 disabled 狀態。
 - `prefers-reduced-motion: reduce` 時不執行 View Transition、位移、旋轉或 stagger。
 - reduced-motion 下仍保留內容順序與可用操作。
 
@@ -227,16 +256,19 @@ Success contract 使用 `Proposal[]`，最多回傳三張真實 proposal；這�
 | Case | 預期                                                                         |
 | ---- | ---------------------------------------------------------------------------- |
 | A-01 | `ready → pending`：intro 淡出、preview 進入 focused layout、pending 文案出現 |
-| A-02 | `pending → success`：不重跑主要位移，只替換為 card stack                     |
+| A-02 | `pending → success`：不重跑主要位移，只替換為 card stack                      |
 | A-03 | `pending → rejected/error`：顯示正確內容，不顯示過期 proposal                |
 | A-04 | 換圖：中止舊 transition，回到 initial，無殘留 reference/class/timer          |
 | A-05 | 移除圖片：先完成 initial layout 回程轉場，再卸載 preview，不觸發卸載後更新   |
 | A-06 | retry：保持 focused，清除舊內容並顯示 pending                                |
 | A-07 | reduced-motion：不執行位移與 View Transition，內容仍正常顯示                 |
 | A-08 | 不支援 View Transition：fallback 仍可完成 layout 與結果顯示                  |
-| A-09 | 一至三張 proposal 可透過 pagination dots 切換，資料更新後 index 回到 `0`     |
+| A-09 | 一至三張 proposal 維持 card stack，Pagination 可切換 active card，資料不足時不複製卡片 |
 | A-10 | pending 期間操作列全部 disabled，不能觸發第二個 request                      |
 | A-11 | client 檔案驗證失敗：停留 initial layout，只顯示檔案錯誤文字，不播放位移動畫 |
+| A-12 | pending 期間顯示 Proposal skeleton，不顯示假的 Proposal 或過期結果            |
+| A-13 | pending 結束後 skeleton 正確替換成 success、rejected 或 error 內容             |
+| A-14 | reduced-motion 時 skeleton 保持靜態，不播放 pulse 或 shimmer                   |
 
 ## 13. 驗收條件
 
@@ -248,8 +280,10 @@ Success contract 使用 `Proposal[]`，最多回傳三張真實 proposal；這�
 - [ ] desktop 與 mobile 都定義 preview 目標位置。
 - [ ] View Transition 不支援時仍可正常使用。
 - [ ] reduced-motion 行為已定義並測試。
+- [ ] pending 期間顯示與 Proposal card 對齊的 Skeleton loader。
+- [ ] Skeleton 不建立假的 Proposal，也不取代 `Proposal[]` API contract。
 - [ ] 換圖、移除、retry、unmount 都會清理 active transition。
-- [ ] card stack 只渲染實際收到的 proposals。
+- [ ] card stack 只渲染實際收到的 proposals，並保留 Pagination 與 active index reset。
 - [ ] 動畫不新增 Provider stage 或業務 state。
 
 ## 14. MVP 後再處理
@@ -259,4 +293,4 @@ Success contract 使用 `Proposal[]`，最多回傳三張真實 proposal；這�
 - 中斷 Server request。
 - 卡片拖曳、滑動手勢與物理彈簧。
 - 超過三張 proposal 的分頁或虛擬化。
-- 跨頁保存卡片切換位置。
+- 跨頁保存卡片排序或收藏位置。

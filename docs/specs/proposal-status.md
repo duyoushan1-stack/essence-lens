@@ -259,7 +259,7 @@ Provider、網路或 Server 執行失敗時，對外只回傳穩定的錯誤 cod
 - `provider-unavailable`：`503`，可重試。
 - `provider-request-failed`、`malformed-provider-response`：`502`。
 
-Development 只有在 request 帶有 `X-Proposal-Debug: 1` 時，才額外回傳安全的 `debug.provider`：`provider`、`statusCode` 與 `providerCode`，並在 Server console 記錄相同資訊；production 不輸出 console，也不回傳 `debug`。
+Development 只有在 request 帶有 `X-Proposal-Debug: 1` 時，才額外回傳安全的 `debug.provider`：`provider`、`statusCode`、`providerCode`，以及可選的 pipeline `stage`（`semantic-analysis`、`grounding` 或 `proposal-generation`）與 Zod `validationIssues`（僅 `path`、`code`）；production 不輸出 console，也不回傳 `debug`。不回傳原始 provider response、錯誤訊息或驗證失敗的原始值。
 
 ```json
 {
@@ -381,7 +381,11 @@ MVP 明確接受以下限制：
 
 - 保留圖片預覽。
 - 隱藏或清除舊 proposal result；不得顯示過期結果。
-- 顯示統一文案：「正在分析圖片並產生提案，請稍候。」
+- 不顯示額外 status 文案，使用 `aria-busy="true"` 與 Skeleton 表示處理中。
+- 在結果區顯示與 Proposal card 版面對齊的 Skeleton loader。
+- Skeleton 只呈現封面、標題、摘要、三段行程與地點列的 placeholder，不建立假的 Proposal 資料。
+- Skeleton 本身設為 `aria-hidden="true"`，結果區保留 `aria-live="polite"` 與 `aria-busy` 狀態。
+- `prefers-reduced-motion: reduce` 時使用靜態 placeholder，不播放 shimmer 或 pulse。
 - 不顯示 Azure、Gemini 或內部 pipeline stage。
 - 禁止重複送出、更換與移除。
 
@@ -433,10 +437,12 @@ MVP 明確接受以下限制：
 | E-09 | 同 key、不同 payload             | HTTP `409`，不執行第二個 payload                                       |
 | E-10 | pending 期間再次點擊             | 只送出一個 HTTP request                                                |
 | E-11 | rejected 後 retry 同一張圖片     | UI 不提供此操作，只能更換圖片                                          |
+| E-12 | pending 期間等待 Proposal        | 顯示 Skeleton，不顯示假的或過期的 Proposal                             |
+| E-13 | pending 結束                      | Skeleton 只被 success、rejected 或 error 內容取代                       |
 
 ## 12. 最小案例驗證
 
-外部 Azure 與 Gemini 尚未串接完成前，開發環境的 default Server route 使用 typed mock provider data 進行最小案例驗證。Development 預設仍使用 mock；只有設定 `NUXT_PROPOSAL_PROVIDER_MODE=azure` 才允許本機使用真實 Azure 與 Gemini provider。Production 仍使用真實 Provider client，未配置或未連線時回傳 `503 provider-unavailable`。Mock 不改變 Server route 與 service 的資料流程。
+外部 Azure、Gemini 與 Agnes 尚未串接完成前，開發環境的 default Server route 使用 typed mock provider data 進行最小案例驗證。Development 預設仍使用 mock；只有設定 `NUXT_PROPOSAL_PROVIDER_MODE=azure` 才允許本機使用真實 Azure、Gemini 與 Agnes provider。Production 仍使用真實 Provider client，未配置或未連線時回傳 `503 provider-unavailable`。Mock 不改變 Server route 與 service 的資料流程。
 
 安全分析先於 Gemini 執行。若 Azure 任一 category 的 severity 大於 `0`，pipeline 立即回傳 safety rejection，不呼叫 Gemini semantic analysis 或 proposal generation；只有所有 Azure severity 都是 `0` 時才進入 Gemini。
 
@@ -508,6 +514,8 @@ Azure mock reject
 - [ ] 圖片選取後依序進入 `validating` 與 `ready`。
 - [ ] Client 檔案驗證失敗時顯示 `rejected`，且不呼叫 Server。
 - [ ] 點擊產生提案後進入 `pending`，並禁止重複送出。
+- [ ] `pending` 結果區顯示與 Proposal card 對齊的 Skeleton loader。
+- [ ] Skeleton 不改變 `Proposal[]` API contract，也不建立假的 Proposal。
 - [ ] 成功結果進入 `success`。
 - [ ] 產品條件不符合時回傳 HTTP `422` 與明確 reason code。
 - [ ] Provider / 網路 / Server 失敗時進入 `error`，而不是 `rejected`。

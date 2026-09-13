@@ -355,6 +355,11 @@ interface ProposalDebugInfo {
     provider: string
     statusCode?: number
     providerCode?: string
+    stage?: 'semantic-analysis' | 'grounding' | 'proposal-generation'
+    validationIssues?: Array<{
+      path: string
+      code: string
+    }>
   }
   semanticAnalysis?: ImageSemanticAnalysis
 }
@@ -364,6 +369,8 @@ interface ProposalDebugInfo {
 
 - `debug` 只在 `import.meta.dev` 且 request 明確 opt-in 時回傳。
 - provider error 的安全資訊放在 `debug.provider`。
+- `debug.provider.stage` 指出失敗發生在 semantic analysis、Google Maps grounding 或 proposal generation。
+- `debug.provider.validationIssues` 只保留 Zod issue 的 path 與 code；空 path 以 `$` 表示，不包含原始值或完整 provider payload。
 - Gemini 通過或拒絕時的語意結果放在 `debug.semanticAnalysis`。
 - production 永不回傳 `debug`。
 - `debug` 不屬於正常 `ProposalOutcome`，避免 `ImageSemanticAnalysis` 被寫入一般 idempotency cache。
