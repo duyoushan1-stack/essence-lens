@@ -84,6 +84,7 @@ const removeFile = async () => {
         <ProposalResultPanel
           :status="flowStatus"
           :proposals="proposals"
+          :fallback-image-url="previewUrl"
           :error="proposalError"
           :rejection-reasons="rejectionReasons"
           @retry="retryProposal"

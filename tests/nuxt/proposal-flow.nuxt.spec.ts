@@ -2,6 +2,18 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
 import ProposalResultPanel from '../../app/components/proposal/ResultPanel.vue'
 
+const proposal = {
+  id: 'proposal-1',
+  title: '午後散步',
+  summary: '在附近街區慢慢走。',
+  itinerary: {
+    morning: { title: '早晨散步' },
+    noon: { title: '午餐休息' },
+    afternoon: { title: '午後慢行' }
+  },
+  cover: { imagePrompt: 'A calm weekend scene.', status: 'unavailable' as const }
+}
+
 describe('ProposalResultPanel', () => {
   it('shows a busy state while the proposal request is pending', async () => {
     const wrapper = await mountSuspended(ProposalResultPanel, {
@@ -14,7 +26,15 @@ describe('ProposalResultPanel', () => {
     })
 
     expect(wrapper.find('section').attributes('aria-busy')).toBe('true')
-    expect(wrapper.text()).toContain('正在分析圖片並產生提案，請稍候。')
+    expect(wrapper.text()).not.toContain('正在分析圖片並產生提案，請稍候。')
+    const skeleton = wrapper.find('[data-proposal-skeleton]')
+    const media = wrapper.find('[data-proposal-skeleton-media]')
+
+    expect(skeleton.exists()).toBe(true)
+    expect(skeleton.classes()).toContain('min-h-[35rem]')
+    expect(skeleton.classes()).toContain('bg-surface/85')
+    expect(media.exists()).toBe(true)
+    expect(media.classes()).toContain('aspect-[16/9]')
   })
 
   it('shows rejection reasons without a retry action', async () => {
@@ -50,7 +70,7 @@ describe('ProposalResultPanel', () => {
     const wrapper = await mountSuspended(ProposalResultPanel, {
       props: {
         status: 'success',
-        proposals: [{ title: '午後散步', description: '在附近街區慢慢走。' }],
+        proposals: [proposal],
         error: null,
         rejectionReasons: []
       }

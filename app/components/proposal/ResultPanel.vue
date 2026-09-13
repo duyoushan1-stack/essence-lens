@@ -2,6 +2,7 @@
 const props = defineProps<{
   status: ProposalFlowStatus
   proposals: ReadonlyArray<Proposal>
+  fallbackImageUrl?: string | null
   error: string | null
   rejectionReasons: ReadonlyArray<ProposalRejectionReason>
 }>()
@@ -28,11 +29,17 @@ const getReasonMessage = (reason: ProposalRejectionReason) => {
 
 const reasonMessages = computed(() => props.rejectionReasons.map(getReasonMessage))
 
-const resultPanelClass = computed(() =>
-  props.status === 'success'
-    ? 'min-h-[30rem]'
-    : 'min-h-80 rounded-[2rem] border border-border bg-surface/80 p-7 shadow-sm sm:p-10'
-)
+const resultPanelClass = computed(() => {
+  if (props.status === 'success') {
+    return 'min-h-[35rem]'
+  }
+
+  if (props.status === 'pending') {
+    return 'min-h-0'
+  }
+
+  return 'min-h-80 rounded-[2rem] border border-border bg-surface/80 p-7 shadow-sm sm:p-10'
+})
 </script>
 
 <template>
@@ -48,8 +55,8 @@ const resultPanelClass = computed(() =>
       </p>
     </div>
 
-    <div v-else-if="status === 'pending'" class="flex min-h-64 items-center">
-      <p class="text-lg leading-8 text-muted">正在分析圖片並產生提案，請稍候。</p>
+    <div v-else-if="status === 'pending'" class="min-h-[35rem]">
+      <ProposalSkeleton />
     </div>
 
     <div v-else-if="status === 'rejected'" class="flex min-h-64 flex-col justify-center gap-5">
@@ -61,7 +68,7 @@ const resultPanelClass = computed(() =>
     </div>
 
     <div v-else-if="status === 'success'">
-      <ProposalCardStack :proposals="proposals" />
+      <ProposalCardStack :proposals="proposals" :fallback-image-url="fallbackImageUrl" />
     </div>
 
     <div v-else class="flex min-h-64 flex-col items-start justify-center gap-5">
