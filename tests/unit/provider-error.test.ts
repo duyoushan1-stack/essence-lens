@@ -65,6 +65,24 @@ describe('normalizeProviderError', () => {
     })
   })
 
+  it('preserves safe provider stage and validation paths', () => {
+    expect(
+      normalizeProviderError({
+        provider: 'gemini',
+        code: 'schema-validation-failed',
+        stage: 'proposal-generation',
+        validationIssues: [{ path: '[0].perspective', code: 'invalid_value' }]
+      })
+    ).toEqual({
+      kind: 'invalid-response',
+      retryable: false,
+      provider: 'gemini',
+      providerCode: 'schema-validation-failed',
+      stage: 'proposal-generation',
+      validationIssues: [{ path: '[0].perspective', code: 'invalid_value' }]
+    })
+  })
+
   it('does not retry unknown failures by default', () => {
     expect(normalizeProviderError(new Error('unexpected failure'))).toEqual({
       kind: 'unknown',

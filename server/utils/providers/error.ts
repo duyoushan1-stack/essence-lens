@@ -1,3 +1,8 @@
+import type {
+  ProposalProviderStage,
+  ProposalValidationIssue
+} from '../../../shared/types/proposal'
+
 /** Provider 例外經過正規化後的分類，供 retry policy 與 API error mapping 使用。 */
 export type ProviderErrorKind =
   | 'configuration'
@@ -14,6 +19,8 @@ export interface NormalizedProviderError {
   provider?: string
   statusCode?: number
   providerCode?: string
+  stage?: ProposalProviderStage
+  validationIssues?: ReadonlyArray<ProposalValidationIssue>
 }
 
 interface UnknownRecord {
@@ -74,6 +81,44 @@ const getProviderCode = (error: UnknownRecord): string | null => {
   return getRawString(providerError?.code) ?? getRawString(error.code)
 }
 
+const getProviderStage = (error: UnknownRecord): ProposalProviderStage | undefined => {
+  const stage = error.stage
+
+  if (
+    stage === 'semantic-analysis' ||
+    stage === 'grounding' ||
+    stage === 'proposal-generation'
+  ) {
+    return stage
+  }
+
+  return undefined
+}
+
+const getValidationIssues = (
+  error: UnknownRecord
+): ReadonlyArray<ProposalValidationIssue> | undefined => {
+  if (!Array.isArray(error.validationIssues)) {
+    return undefined
+  }
+
+  const issues = error.validationIssues.filter(
+    (issue): issue is { path: string; code: string } =>
+      isRecord(issue) && typeof issue.path === 'string' && typeof issue.code === 'string'
+  )
+
+  return issues.length > 0 ? issues : undefined
+}
+
+/** 將 Zod issue path 轉成不包含原始值的安全 debug 欄位。 */
+export const toProviderValidationIssues = (
+  issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey>; code: string }>
+): ProposalValidationIssue[] =>
+  issues.map((issue) => ({
+    path: issue.path.length > 0 ? issue.path.map(String).join('.') : '$',
+    code: issue.code
+  }))
+
 /** 將不同 SDK、HTTP client 或網路錯誤轉成一致的重試判斷結果。 */
 export const normalizeProviderError = (
   error: unknown,
@@ -97,11 +142,15 @@ export const normalizeProviderError = (
     getNumber(cause?.statusCode)
   const provider = getRawString(error.provider) ?? fallbackProvider ?? undefined
   const providerCode = getProviderCode(error) ?? undefined
+  const stage = getProviderStage(error)
+  const validationIssues = getValidationIssues(error)
   const classificationCode = code ?? getString(providerCode)
   const details = {
     ...(provider ? { provider } : {}),
     ...(status !== null ? { statusCode: status } : {}),
-    ...(providerCode ? { providerCode } : {})
+    ...(providerCode ? { providerCode } : {}),
+    ...(stage ? { stage } : {}),
+    ...(validationIssues ? { validationIssues } : {})
   }
 
   if (classificationCode && INVALID_RESPONSE_CODES.has(classificationCode.toLowerCase())) {

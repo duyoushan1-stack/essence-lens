@@ -88,7 +88,13 @@ const toProviderErrorResult = (
     unknown: 'provider-request-failed'
   }
 
-  const { provider: normalizedProvider, statusCode, providerCode } = normalizedError
+  const {
+    provider: normalizedProvider,
+    statusCode,
+    providerCode,
+    stage,
+    validationIssues
+  } = normalizedError
 
   return {
     status: 'error',
@@ -99,7 +105,9 @@ const toProviderErrorResult = (
             provider: {
               provider: normalizedProvider ?? provider,
               ...(statusCode !== undefined ? { statusCode } : {}),
-              ...(providerCode !== undefined ? { providerCode } : {})
+              ...(providerCode !== undefined ? { providerCode } : {}),
+              ...(stage !== undefined ? { stage } : {}),
+              ...(validationIssues !== undefined ? { validationIssues } : {})
             }
           }
         }

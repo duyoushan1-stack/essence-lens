@@ -155,6 +155,35 @@ describe('evaluateImageFeasibilityForFile', () => {
     expect(analyzeSemantics).not.toHaveBeenCalled()
   })
 
+  it('keeps semantic analysis stage and validation paths in debug data', async () => {
+    const analyzeSafety = vi.fn().mockResolvedValue(safeContentSafety)
+    const analyzeSemantics = vi.fn().mockRejectedValue({
+      provider: 'gemini',
+      code: 'schema-validation-failed',
+      stage: 'semantic-analysis',
+      validationIssues: [{ path: 'visualMood', code: 'too_big' }]
+    })
+
+    const result = await evaluateImageFeasibilityForFile(
+      input,
+      { analyzeSafety, analyzeSemantics },
+      { includeDebug: true }
+    )
+
+    expect(result).toEqual({
+      status: 'error',
+      code: 'malformed-provider-response',
+      debug: {
+        provider: {
+          provider: 'gemini',
+          providerCode: 'schema-validation-failed',
+          stage: 'semantic-analysis',
+          validationIssues: [{ path: 'visualMood', code: 'too_big' }]
+        }
+      }
+    })
+  })
+
   it('rejects invalid server input before calling Providers', async () => {
     const analyzeSafety = vi.fn()
     const analyzeSemantics = vi.fn()
