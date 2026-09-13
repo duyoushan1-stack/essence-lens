@@ -17,8 +17,15 @@ const proposalResponse: ProposalApiSuccessResponse = {
   requestId: 'request-123',
   proposals: [
     {
+      id: 'proposal-1',
       title: '午後散步與咖啡',
-      description: '到附近街區散步，再找一間安靜的咖啡店休息。'
+      summary: '到附近街區散步，再找一間安靜的咖啡店休息。',
+      itinerary: {
+        morning: { title: '公園散步' },
+        noon: { title: '街區午餐' },
+        afternoon: { title: '咖啡與閱讀' }
+      },
+      cover: { imagePrompt: 'A calm urban afternoon.', status: 'unavailable' as const }
     }
   ]
 }

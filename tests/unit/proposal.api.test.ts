@@ -52,6 +52,18 @@ const filePart: MultipartPart = {
   type: 'image/jpeg'
 }
 
+const createProposal = (id = 'proposal-1', title = '午後散步與咖啡', summary = '到附近街區散步。'): Proposal => ({
+  id,
+  title,
+  summary,
+  itinerary: {
+    morning: { title: '公園散步' },
+    noon: { title: '街區午餐' },
+    afternoon: { title: '咖啡與閱讀' }
+  },
+  cover: { imagePrompt: 'A calm urban afternoon.', status: 'unavailable' }
+})
+
 const createService = (result: ProposalServiceResult): ProposalService => ({
   generate: vi
     .fn<(input: ProposalPipelineInput) => Promise<ProposalServiceResult>>()
@@ -119,12 +131,7 @@ describe('POST /api/proposal', () => {
     const success: ProposalApiSuccessResponse = {
       status: 'success',
       requestId: 'request-123',
-      proposals: [
-        {
-          title: '午後散步與咖啡',
-          description: '到附近街區散步，再找一間安靜的咖啡店休息。'
-        }
-      ]
+      proposals: [createProposal()]
     }
     const rejected: ProposalApiRejectedResponse = {
       status: 'rejected',
@@ -137,12 +144,7 @@ describe('POST /api/proposal', () => {
   })
 
   it('returns a success response from the proposal service', async () => {
-    const proposals: Proposal[] = [
-      {
-        title: '午後散步與咖啡',
-        description: '到附近街區散步，再找一間安靜的咖啡店休息。'
-      }
-    ]
+    const proposals: Proposal[] = [createProposal()]
     const service = createService({ status: 'success', proposals })
     const handler = createProposalHandler(service)
 
@@ -286,7 +288,7 @@ describe('POST /api/proposal', () => {
         usefulObjects: ['trees']
       }
     }
-    const proposals: Proposal[] = [{ title: '午後散步', description: '到附近走走。' }]
+    const proposals: Proposal[] = [createProposal('proposal-debug', '午後散步', '到附近走走。')]
     const service = createService({ status: 'success', proposals, debug })
     const handler = createProposalHandler(service, { isDevelopment: true })
     currentDebugHeader = '1'
