@@ -25,10 +25,10 @@ export const getProposalCardVariant = (
 
   return {
     x: direction * (22 + offset * 4),
-    y: -offset * 12,
-    rotate: direction * (4 + offset),
-    scale: 1 - offset * 0.045,
-    opacity: Math.max(0.28, 0.58 - offset * 0.12),
+    y: -offset * 14,
+    rotate: direction * (4 + offset * 1.5),
+    scale: 1 - offset * 0.05,
+    opacity: Math.max(0.36, 0.7 - offset * 0.12),
     transition: getTransition(reducedMotion)
   }
 }
