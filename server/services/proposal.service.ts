@@ -127,7 +127,7 @@ const toProposal = (
     ...(location
       ? {
           location: {
-            name: location.name,
+            name: location.displayName,
             ...(location.address ? { address: location.address } : {}),
             externalUrl: createLocationUrl(location)
           }

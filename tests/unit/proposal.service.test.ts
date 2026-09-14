@@ -3,7 +3,16 @@ import type {
   ImageSemanticAnalysis,
   ContentSafetyAssessment
 } from '../../shared/types/image-feasibility'
-import type { ProposalDraft, ProposalProviderDependencies, ProviderImageInput } from '../../server/providers/provider.types'
+import type {
+  AnalyzeSafety,
+  AnalyzeSemantics,
+  GenerateProposal,
+  GenerateProposalImage,
+  GroundLocations,
+  ProposalDraft,
+  ProposalProviderDependencies,
+  ProviderImageInput
+} from '../../server/providers/provider.types'
 
 type ProposalServiceModule = typeof import('../../server/services/proposal.service')
 let createProposalService: ProposalServiceModule['createProposalService']
@@ -67,43 +76,54 @@ const semantics: ImageSemanticAnalysis = {
   usefulObjects: ['trees']
 }
 
-const locations = [{ name: '大安森林公園', address: '台北市大安區新生南路二段 1 號', sourceUrl: 'https://maps.google.com/maps?cid=1', reason: 'Trees', suggestedActivities: ['Walk along the park paths'] }]
-
-const drafts: ProposalDraft[] = ([
+const locations = [
   {
-    title: '午後散步與咖啡',
-    summary: '到附近街區散步，再找一間安靜的咖啡店休息。',
-    perspective: 'nature',
-    itinerary: {
-      morning: { title: '公園散步' },
-      noon: { title: '街區午餐' },
-      afternoon: { title: '咖啡與閱讀' }
-    },
-    cover: { imagePrompt: 'A calm urban afternoon.' }
-  },
-  {
-    title: '沿街慢慢走',
-    summary: '沿著熟悉的街區走一小段，留意平常忽略的細節。',
-    perspective: 'coast',
-    itinerary: {
-      morning: { title: '街角觀察' },
-      noon: { title: '簡單午餐' },
-      afternoon: { title: '黃昏慢行' }
-    },
-    cover: { imagePrompt: 'A quiet neighborhood walk.' }
-  },
-  {
-    title: '黃昏取景',
-    summary: '在日落前找一個安靜的位置，替今天留下畫面。',
-    perspective: 'culture',
-    itinerary: {
-      morning: { title: '選一條路線' },
-      noon: { title: '慢慢吃飯' },
-      afternoon: { title: '等待夕陽' }
-    },
-    cover: { imagePrompt: 'A peaceful neighborhood at golden hour.' }
+    name: '大安森林公園',
+    displayName: '大安森林公園',
+    address: '台北市大安區新生南路二段 1 號',
+    sourceUrl: 'https://maps.google.com/maps?cid=1',
+    reason: '樹木景觀',
+    suggestedActivities: ['沿著公園步道散步']
   }
-] satisfies ProposalDraft[]).map((draft) => ({
+]
+
+const drafts: ProposalDraft[] = (
+  [
+    {
+      title: '午後散步與咖啡',
+      summary: '到附近街區散步，再找一間安靜的咖啡店休息。',
+      perspective: 'nature',
+      itinerary: {
+        morning: { title: '公園散步' },
+        noon: { title: '街區午餐' },
+        afternoon: { title: '咖啡與閱讀' }
+      },
+      cover: { imagePrompt: 'A calm urban afternoon.' }
+    },
+    {
+      title: '沿街慢慢走',
+      summary: '沿著熟悉的街區走一小段，留意平常忽略的細節。',
+      perspective: 'coast',
+      itinerary: {
+        morning: { title: '街角觀察' },
+        noon: { title: '簡單午餐' },
+        afternoon: { title: '黃昏慢行' }
+      },
+      cover: { imagePrompt: 'A quiet neighborhood walk.' }
+    },
+    {
+      title: '黃昏取景',
+      summary: '在日落前找一個安靜的位置，替今天留下畫面。',
+      perspective: 'culture',
+      itinerary: {
+        morning: { title: '選一條路線' },
+        noon: { title: '慢慢吃飯' },
+        afternoon: { title: '等待夕陽' }
+      },
+      cover: { imagePrompt: 'A peaceful neighborhood at golden hour.' }
+    }
+  ] satisfies Omit<ProposalDraft, 'locationCandidate'>[]
+).map((draft) => ({
   ...draft,
   locationCandidate: '大安森林公園',
   itinerary: {
@@ -114,55 +134,88 @@ const drafts: ProposalDraft[] = ([
 }))
 
 const createDependencies = (
-  analyzeSafety: ReturnType<typeof vi.fn>,
-  analyzeSemantics: ReturnType<typeof vi.fn>,
-  generateProposal: ReturnType<typeof vi.fn>,
-  overrides: Pick<ProposalProviderDependencies, 'groundLocations' | 'generateProposalImage'> = {}
+  analyzeSafety: AnalyzeSafety,
+  analyzeSemantics: AnalyzeSemantics,
+  generateProposal: GenerateProposal,
+  overrides: Partial<
+    Pick<ProposalProviderDependencies, 'groundLocations' | 'generateProposalImage'>
+  > = {}
 ): ProposalProviderDependencies => ({
   analyzeSafety,
   analyzeSemantics,
-  groundLocations: overrides.groundLocations ?? vi.fn().mockResolvedValue(locations),
+  groundLocations:
+    overrides.groundLocations ?? vi.fn<GroundLocations>().mockResolvedValue(locations),
   generateProposal,
-  generateProposalImage: overrides.generateProposalImage ?? vi.fn().mockResolvedValue(null)
+  generateProposalImage:
+    overrides.generateProposalImage ?? vi.fn<GenerateProposalImage>().mockResolvedValue(null)
 })
 
 describe('createProposalService', () => {
   it('stops before generating cards when grounding returns no destinations', async () => {
     const generateProposal = vi.fn().mockResolvedValue(drafts)
-    const service = createProposalService(createDependencies(
-      vi.fn().mockResolvedValue(safety), vi.fn().mockResolvedValue(semantics), generateProposal,
-      { groundLocations: vi.fn().mockResolvedValue([]) }
-    ))
-    const result = await service.generate({ file: input, idempotencyKey: 'no-destinations', debug: true })
+    const service = createProposalService(
+      createDependencies(
+        vi.fn().mockResolvedValue(safety),
+        vi.fn().mockResolvedValue(semantics),
+        generateProposal,
+        { groundLocations: vi.fn().mockResolvedValue([]) }
+      )
+    )
+    const result = await service.generate({
+      file: input,
+      idempotencyKey: 'no-destinations',
+      debug: true
+    })
     expect(result).toMatchObject({ status: 'error', debug: { provider: { stage: 'grounding' } } })
     expect(generateProposal).not.toHaveBeenCalled()
   })
 
   it('rejects an incomplete one-card response', async () => {
-    const service = createProposalService(createDependencies(
-      vi.fn().mockResolvedValue(safety), vi.fn().mockResolvedValue(semantics),
-      vi.fn().mockResolvedValue([drafts[0]])
-    ))
-    expect(await service.generate({ file: input, idempotencyKey: 'one-card' })).toMatchObject({ status: 'error' })
+    const service = createProposalService(
+      createDependencies(
+        vi.fn().mockResolvedValue(safety),
+        vi.fn().mockResolvedValue(semantics),
+        vi.fn().mockResolvedValue([drafts[0]])
+      )
+    )
+    expect(await service.generate({ file: input, idempotencyKey: 'one-card' })).toMatchObject({
+      status: 'error'
+    })
   })
 
   it('rejects a destination that does not match grounding before generating covers', async () => {
     const generateProposalImage = vi.fn()
-    const service = createProposalService(createDependencies(
-      vi.fn().mockResolvedValue(safety), vi.fn().mockResolvedValue(semantics),
-      vi.fn().mockResolvedValue(drafts.map(draft => ({ ...draft, locationCandidate: '未驗證地點' }))),
-      { generateProposalImage }
-    ))
-    const result = await service.generate({ file: input, idempotencyKey: 'unmatched-destination', debug: true })
-    expect(result).toMatchObject({ status: 'error', debug: { provider: { stage: 'proposal-generation' } } })
+    const service = createProposalService(
+      createDependencies(
+        vi.fn().mockResolvedValue(safety),
+        vi.fn().mockResolvedValue(semantics),
+        vi
+          .fn()
+          .mockResolvedValue(
+            drafts.map((draft) => ({ ...draft, locationCandidate: '未驗證地點' }))
+          ),
+        { generateProposalImage }
+      )
+    )
+    const result = await service.generate({
+      file: input,
+      idempotencyKey: 'unmatched-destination',
+      debug: true
+    })
+    expect(result).toMatchObject({
+      status: 'error',
+      debug: { provider: { stage: 'proposal-generation' } }
+    })
     expect(generateProposalImage).not.toHaveBeenCalled()
   })
   it('accepts multiple culture proposals without forcing unrelated settings', async () => {
-    const service = createProposalService(createDependencies(
-      vi.fn().mockResolvedValue(safety),
-      vi.fn().mockResolvedValue(semantics),
-      vi.fn().mockResolvedValue(drafts.map((draft) => ({ ...draft, perspective: 'culture' })))
-    ))
+    const service = createProposalService(
+      createDependencies(
+        vi.fn().mockResolvedValue(safety),
+        vi.fn().mockResolvedValue(semantics),
+        vi.fn().mockResolvedValue(drafts.map((draft) => ({ ...draft, perspective: 'culture' })))
+      )
+    )
     const result = await service.generate({ file: input, idempotencyKey: 'shared-culture' })
     expect(result.status).toBe('success')
   })
@@ -171,7 +224,9 @@ describe('createProposalService', () => {
     const analyzeSafety = vi.fn().mockResolvedValue(safety)
     const analyzeSemantics = vi.fn().mockResolvedValue(semantics)
     const generateProposal = vi.fn().mockResolvedValue(drafts)
-    const service = createProposalService(createDependencies(analyzeSafety, analyzeSemantics, generateProposal))
+    const service = createProposalService(
+      createDependencies(analyzeSafety, analyzeSemantics, generateProposal)
+    )
 
     const result = await service.generate({ file: input, idempotencyKey: 'key-1' })
 
@@ -194,7 +249,9 @@ describe('createProposalService', () => {
     })
     const analyzeSemantics = vi.fn()
     const generateProposal = vi.fn()
-    const service = createProposalService(createDependencies(analyzeSafety, analyzeSemantics, generateProposal))
+    const service = createProposalService(
+      createDependencies(analyzeSafety, analyzeSemantics, generateProposal)
+    )
 
     const result = await service.generate({ file: input, idempotencyKey: 'key-2' })
 
@@ -211,6 +268,7 @@ describe('createProposalService', () => {
     const groundLocations = vi.fn().mockResolvedValue([
       {
         name: '大安森林公園',
+        displayName: '大安森林公園',
         address: '台北市大安區新生南路二段 1 號',
         sourceUrl: 'https://example.com/location',
         reason: '符合樹影與街區散步氛圍'
@@ -276,10 +334,12 @@ describe('createProposalService', () => {
   it('preserves a verified Google Maps source URL for the location link', async () => {
     const analyzeSafety = vi.fn().mockResolvedValue(safety)
     const analyzeSemantics = vi.fn().mockResolvedValue(semantics)
-    const mapsUrl = 'https://www.google.com/maps/place/%E5%A4%A7%E5%AE%89%E6%A3%AE%E6%9E%97%E5%85%AC%E5%9C%92'
+    const mapsUrl =
+      'https://www.google.com/maps/place/%E5%A4%A7%E5%AE%89%E6%A3%AE%E6%9E%97%E5%85%AC%E5%9C%92'
     const groundLocations = vi.fn().mockResolvedValue([
       {
         name: '大安森林公園',
+        displayName: '大安森林公園',
         sourceUrl: mapsUrl,
         reason: '符合樹影與街區散步氛圍'
       }
@@ -293,7 +353,52 @@ describe('createProposalService', () => {
 
     expect(result).toMatchObject({
       status: 'success',
-      proposals: expect.arrayContaining([expect.objectContaining({ location: expect.objectContaining({ externalUrl: mapsUrl }) })])
+      proposals: expect.arrayContaining([
+        expect.objectContaining({ location: expect.objectContaining({ externalUrl: mapsUrl }) })
+      ])
+    })
+  })
+
+  it('renders a localized destination name while keeping the canonical name for Maps search', async () => {
+    const canonicalName = 'Hakone Tozan Cable Car Sounzan Station'
+    const displayName = '箱根登山纜車早雲山站'
+    const groundLocations = vi.fn().mockResolvedValue([
+      {
+        name: canonicalName,
+        displayName,
+        address: '足柄下郡箱根町仙石原',
+        sourceUrl: 'https://example.com/hakone',
+        reason: '可觀察山景與纜車站周邊景觀。',
+        suggestedActivities: ['在觀景台眺望箱根山景。']
+      }
+    ])
+    const generateProposal = vi
+      .fn()
+      .mockResolvedValue(drafts.map((draft) => ({ ...draft, locationCandidate: canonicalName })))
+    const service = createProposalService(
+      createDependencies(
+        vi.fn().mockResolvedValue(safety),
+        vi.fn().mockResolvedValue(semantics),
+        generateProposal,
+        {
+          groundLocations
+        }
+      )
+    )
+
+    const result = await service.generate({ file: input, idempotencyKey: 'localized-location' })
+
+    expect(result).toMatchObject({
+      status: 'success',
+      proposals: expect.arrayContaining([
+        expect.objectContaining({
+          location: {
+            name: displayName,
+            address: '足柄下郡箱根町仙石原',
+            externalUrl: expect.stringContaining(encodeURIComponent(canonicalName))
+          }
+        })
+      ])
     })
   })
 
@@ -331,7 +436,9 @@ describe('createProposalService', () => {
       provider: 'gemini',
       providerCode: 'ServiceUnavailable'
     })
-    const service = createProposalService(createDependencies(analyzeSafety, analyzeSemantics, generateProposal))
+    const service = createProposalService(
+      createDependencies(analyzeSafety, analyzeSemantics, generateProposal)
+    )
 
     const result = await service.generate({
       file: input,
@@ -362,7 +469,9 @@ describe('createProposalService', () => {
       stage: 'proposal-generation',
       validationIssues: [{ path: '[0].perspective', code: 'invalid_value' }]
     })
-    const service = createProposalService(createDependencies(analyzeSafety, analyzeSemantics, generateProposal))
+    const service = createProposalService(
+      createDependencies(analyzeSafety, analyzeSemantics, generateProposal)
+    )
 
     const result = await service.generate({
       file: input,
@@ -389,7 +498,9 @@ describe('createProposalService', () => {
     const analyzeSafety = vi.fn().mockResolvedValue(safety)
     const analyzeSemantics = vi.fn().mockResolvedValue(semantics)
     const generateProposal = vi.fn().mockResolvedValue(drafts)
-    const service = createProposalService(createDependencies(analyzeSafety, analyzeSemantics, generateProposal))
+    const service = createProposalService(
+      createDependencies(analyzeSafety, analyzeSemantics, generateProposal)
+    )
 
     const debugResult = await service.generate({
       file: input,
@@ -413,7 +524,9 @@ describe('createProposalService', () => {
     const analyzeSafety = vi.fn().mockResolvedValue(safety)
     const analyzeSemantics = vi.fn().mockResolvedValue(semantics)
     const generateProposal = vi.fn().mockResolvedValue(drafts)
-    const service = createProposalService(createDependencies(analyzeSafety, analyzeSemantics, generateProposal))
+    const service = createProposalService(
+      createDependencies(analyzeSafety, analyzeSemantics, generateProposal)
+    )
 
     const first = await service.generate({ file: input, idempotencyKey: 'key-3' })
     const duplicate = await service.generate({ file: input, idempotencyKey: 'key-3' })
