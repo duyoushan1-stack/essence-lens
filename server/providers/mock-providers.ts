@@ -1,4 +1,8 @@
-import type { GroundedLocation, ProposalDraft, ProposalProviderDependencies } from './provider.types'
+import type {
+  GroundedLocation,
+  ProposalDraft,
+  ProposalProviderDependencies
+} from './provider.types'
 
 const MOCK_SAFETY: ContentSafetyAssessment = {
   provider: 'azure-content-safety',
@@ -48,7 +52,9 @@ const MOCK_PROPOSAL_DRAFTS: ProposalDraft[] = [
       noon: { title: '海邊午餐', description: '選一間能看見風景的小店。' },
       afternoon: { title: '咖啡看潮', description: '用一杯咖啡替午後留白。' }
     },
-    cover: { imagePrompt: 'A quiet seaside afternoon with a broad horizon, editorial travel photography.' }
+    cover: {
+      imagePrompt: 'A quiet seaside afternoon with a broad horizon, editorial travel photography.'
+    }
   },
   {
     title: '老街微光散策',
@@ -60,15 +66,39 @@ const MOCK_PROPOSAL_DRAFTS: ProposalDraft[] = [
       noon: { title: '在地小吃', description: '挑一間有地方味道的小店。' },
       afternoon: { title: '選物慢看', description: '把時間留給一間有趣的小店。' }
     },
-    cover: { imagePrompt: 'A warm heritage street at golden hour with small local shops, editorial travel photography.' }
+    cover: {
+      imagePrompt:
+        'A warm heritage street at golden hour with small local shops, editorial travel photography.'
+    }
   }
 ]
 
 /** 僅供 development mock 展示，不代表本次 request 執行過 Maps 查證。 */
 const MOCK_LOCATIONS: GroundedLocation[] = [
-  { name: '大安森林公園', address: '臺北市大安區新生南路二段', sourceUrl: 'https://www.google.com/maps/search/?api=1&query=大安森林公園', reason: 'Development fixture', suggestedActivities: ['Walk along the park paths'] },
-  { name: '淡水老街', address: '新北市淡水區中正路', sourceUrl: 'https://www.google.com/maps/search/?api=1&query=淡水老街', reason: 'Development fixture', suggestedActivities: ['Walk along the street'] },
-  { name: '迪化街', address: '臺北市大同區迪化街一段', sourceUrl: 'https://www.google.com/maps/search/?api=1&query=迪化街', reason: 'Development fixture', suggestedActivities: ['Observe historic shopfronts'] }
+  {
+    name: '大安森林公園',
+    displayName: '大安森林公園',
+    address: '臺北市大安區新生南路二段',
+    sourceUrl: 'https://www.google.com/maps/search/?api=1&query=大安森林公園',
+    reason: '開發測試資料',
+    suggestedActivities: ['沿著公園步道散步']
+  },
+  {
+    name: '淡水老街',
+    displayName: '淡水老街',
+    address: '新北市淡水區中正路',
+    sourceUrl: 'https://www.google.com/maps/search/?api=1&query=淡水老街',
+    reason: '開發測試資料',
+    suggestedActivities: ['沿著老街步行']
+  },
+  {
+    name: '迪化街',
+    displayName: '迪化街',
+    address: '臺北市大同區迪化街一段',
+    sourceUrl: 'https://www.google.com/maps/search/?api=1&query=迪化街',
+    reason: '開發測試資料',
+    suggestedActivities: ['觀察歷史街屋立面']
+  }
 ]
 
 export const createMockProposalProviders = (): ProposalProviderDependencies => ({

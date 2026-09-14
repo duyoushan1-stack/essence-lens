@@ -13,6 +13,7 @@ const groundedLocationDraftSchema = z
   .array(
     z.strictObject({
       name: z.string().trim().min(1),
+      displayName: z.string().trim().min(1),
       address: z.string().trim().min(1).optional(),
       reason: z.string().trim().min(1),
       suggestedActivities: z.array(z.string().trim().min(1)).min(1).max(3)
@@ -27,14 +28,16 @@ delete groundedLocationDraftJsonSchema.$schema
 const GROUNDING_PROMPT = `Find up to three real places that could anchor a gentle weekend proposal.
 
 Return only JSON matching the response schema.
-- Use the canonical Google Maps place name and address for name and address; write reason in English.
+- Use the canonical Google Maps place name and address for name and address.
+- Return displayName as a concise Traditional Chinese (zh-TW) name for user-facing UI. Keep name unchanged for exact matching.
 - Use Google Maps grounding to verify that each place exists and is currently searchable.
 - Do not claim that the uploaded image reveals an exact location. Use the visual analysis only to choose an appropriate kind of destination.
 - Match distinctive visible settings, architecture and objects first; mood alone is insufficient. Visual similarity takes priority over diversity.
 - Vary experiences within that theme. Historic streetscapes support architecture walks or street photography, not unrelated mountain hikes or open waterfronts merely for variety.
 - Return fewer places when necessary; do not fill category quotas.
 - Explain which supplied visual features each destination matches using grounded place information.
-- Provide one to three suggestedActivities in English per destination: concrete actions supported by grounded information or a direct reasonable use of the verified place itself.
+- Provide one to three suggestedActivities in Traditional Chinese (zh-TW) per destination: concrete actions supported by grounded information or a direct reasonable use of the verified place itself.
+- Write reason in Traditional Chinese (zh-TW), explaining which supplied visual features the destination matches.
 - Do not invent shops, dishes, exhibitions, events, opening hours or facilities. Avoid vague actions such as relax or enjoy the atmosphere.
 - Copy each name from a Maps tool place or place citation, excluding the trailing " - Google Maps" source label. Include the verified address when available; omit unverified addresses.
 - These are recommended destinations, not photo capture locations. Locale is a language preference, not evidence of the user's location.
@@ -152,6 +155,7 @@ const toGroundedLocations = (
 ): GroundedLocation[] =>
   drafts.map((draft) => ({
     name: draft.name,
+    displayName: draft.displayName,
     ...(draft.address ? { address: draft.address } : {}),
     sourceUrl: getCitationUrl(draft.name, citations) ?? '',
     reason: draft.reason,

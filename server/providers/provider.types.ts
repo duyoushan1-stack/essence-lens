@@ -33,6 +33,7 @@ export interface GroundLocationsInput {
 
 export interface GroundedLocation {
   name: string
+  displayName: string
   address?: string
   sourceUrl: string
   reason: string
