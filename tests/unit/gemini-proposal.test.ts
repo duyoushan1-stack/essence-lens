@@ -24,7 +24,15 @@ const context: ProposalGenerationContext = {
     visualMood: ['calm', 'curious'],
     usefulObjects: ['trees', 'street']
   },
-  locations: [{ name: '大安森林公園', sourceUrl: 'https://maps.google.com/maps?cid=1', reason: 'Trees', suggestedActivities: ['Walk along the park paths'] }],
+  locations: [
+    {
+      name: '大安森林公園',
+      displayName: '大安森林公園',
+      sourceUrl: 'https://maps.google.com/maps?cid=1',
+      reason: '樹木景觀',
+      suggestedActivities: ['沿著公園步道散步']
+    }
+  ],
   locale: 'zh-TW'
 }
 
@@ -73,6 +81,21 @@ describe('createGeminiProposalProvider', () => {
     })
   })
 
+  it('requires Traditional Chinese user-facing copy and the localized destination name', async () => {
+    interactionsCreateMock.mockResolvedValue({ output_text: JSON.stringify([draft, draft, draft]) })
+
+    const generateProposal = createGeminiProposalProvider({
+      client: createGeminiClient('test-gemini-key'),
+      model: 'gemini-proposal'
+    })
+
+    await generateProposal(context)
+
+    const prompt = interactionsCreateMock.mock.calls[0]?.[0].input[0].text
+    expect(prompt).toEqual(expect.stringContaining('Traditional Chinese'))
+    expect(prompt).toEqual(expect.stringContaining('displayName'))
+  })
+
   it('rejects invalid JSON and output beyond three cards', async () => {
     interactionsCreateMock.mockResolvedValue({ output_text: '{invalid-json' })
 
@@ -100,22 +123,46 @@ describe('createGeminiProposalProvider', () => {
   })
 
   it.each([1, 2])('rejects an incomplete response with %i cards', async (count) => {
-    interactionsCreateMock.mockResolvedValue({ output_text: JSON.stringify(Array.from({ length: count }, () => draft)) })
-    const provider = createGeminiProposalProvider({ client: createGeminiClient('test-gemini-key'), model: 'gemini-proposal' })
-    await expect(provider(context)).rejects.toMatchObject({ stage: 'proposal-generation', code: 'schema-validation-failed' })
+    interactionsCreateMock.mockResolvedValue({
+      output_text: JSON.stringify(Array.from({ length: count }, () => draft))
+    })
+    const provider = createGeminiProposalProvider({
+      client: createGeminiClient('test-gemini-key'),
+      model: 'gemini-proposal'
+    })
+    await expect(provider(context)).rejects.toMatchObject({
+      stage: 'proposal-generation',
+      code: 'schema-validation-failed'
+    })
   })
 
   it('does not call the model without grounded destinations', async () => {
-    const provider = createGeminiProposalProvider({ client: createGeminiClient('test-gemini-key'), model: 'gemini-proposal' })
-    await expect(provider({ ...context, locations: [] })).rejects.toMatchObject({ stage: 'grounding' })
+    const provider = createGeminiProposalProvider({
+      client: createGeminiClient('test-gemini-key'),
+      model: 'gemini-proposal'
+    })
+    await expect(provider({ ...context, locations: [] })).rejects.toMatchObject({
+      stage: 'grounding'
+    })
     expect(interactionsCreateMock).not.toHaveBeenCalled()
   })
 
   it('rejects activity titles without executable descriptions', async () => {
-    interactionsCreateMock.mockResolvedValue({ output_text: JSON.stringify(Array.from({ length: 3 }, () => ({
-      ...draft, itinerary: { ...draft.itinerary, morning: { title: '建築立面攝影' } }
-    }))) })
-    const provider = createGeminiProposalProvider({ client: createGeminiClient('test-gemini-key'), model: 'gemini-proposal' })
-    await expect(provider(context)).rejects.toMatchObject({ stage: 'proposal-generation', code: 'schema-validation-failed' })
+    interactionsCreateMock.mockResolvedValue({
+      output_text: JSON.stringify(
+        Array.from({ length: 3 }, () => ({
+          ...draft,
+          itinerary: { ...draft.itinerary, morning: { title: '建築立面攝影' } }
+        }))
+      )
+    })
+    const provider = createGeminiProposalProvider({
+      client: createGeminiClient('test-gemini-key'),
+      model: 'gemini-proposal'
+    })
+    await expect(provider(context)).rejects.toMatchObject({
+      stage: 'proposal-generation',
+      code: 'schema-validation-failed'
+    })
   })
 })
