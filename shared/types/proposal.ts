@@ -23,16 +23,19 @@ export type ProposalRejectionReason =
   | { category: 'theme'; code: ThemeReasonCode }
   | { category: 'information'; code: InformationReasonCode }
 
-/** 可行性分析、提案生成或 Server 執行失敗的錯誤碼，不含 HTTP 請求層錯誤。 */
+/**
+ * 將 Provider 或 Server 的 raw error 正規化後使用的穩定錯誤碼。
+ * 錯誤碼維持英文字串供 API 與程式判斷，中文註解說明對應的錯誤語意。
+ */
 export type ProposalErrorCode =
-  | 'provider-config-invalid'
-  | 'provider-authentication-failed'
-  | 'provider-invalid-request'
-  | 'provider-unavailable'
-  | 'provider-request-failed'
-  | 'malformed-provider-response'
-  | 'proposal-generation-failed'
-  | 'server-failure'
+  | 'provider-config-invalid' // Provider 設定缺失或無效
+  | 'provider-authentication-failed' // Provider 驗證失敗
+  | 'provider-invalid-request' // 傳送給 Provider 的請求格式或參數無效
+  | 'provider-unavailable' // Provider 暫時無法使用，可稍後重試
+  | 'provider-request-failed' // Provider 請求失敗，但無法歸類為其他明確錯誤
+  | 'malformed-provider-response' // Provider 回應格式或內容不符合預期
+  | 'proposal-generation-failed' // 提案生成流程失敗
+  | 'server-failure' // Server 發生未預期的內部錯誤
 
 /** 僅供 development debug 使用的安全 Provider 資訊，不包含原始錯誤訊息或 payload。 */
 export type ProposalProviderStage =
