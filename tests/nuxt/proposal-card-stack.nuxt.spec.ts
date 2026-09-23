@@ -30,12 +30,18 @@ describe('ProposalCardStack', () => {
         noon: { title: '街屋觀察', description: '沿街比較連續街屋的立面配置。' },
         afternoon: { title: '街景記錄', description: '選取街道透視構圖並拍照記錄。' }
       },
-      location: { name: '大溪老街', address: '桃園市大溪區和平路', externalUrl: 'https://www.google.com/maps/place/Daxi' }
+      location: {
+        name: '大溪老街',
+        address: '桃園市大溪區和平路',
+        externalUrl: 'https://www.google.com/maps/place/Daxi'
+      }
     }
     const wrapper = await mountSuspended(ProposalCardStack, { props: { proposals: [proposal] } })
     expect(wrapper.text()).not.toContain(proposal.location?.address)
     expect(wrapper.text()).toContain(proposal.location?.name)
-    expect(wrapper.get('a.proposal-card-location').attributes('href')).toBe(proposal.location?.externalUrl)
+    expect(wrapper.get('a.proposal-card-location').attributes('href')).toBe(
+      proposal.location?.externalUrl
+    )
     const toggle = wrapper.get('[data-itinerary-toggle="morning"]')
     const description = wrapper.get(`#proposal-${proposal.id}-morning-description`)
     expect(toggle.attributes('aria-expanded')).toBe('false')
@@ -51,7 +57,9 @@ describe('ProposalCardStack', () => {
   })
 
   it('lets the itinerary accordion fill the card space above the location button', async () => {
-    const wrapper = await mountSuspended(ProposalCardStack, { props: { proposals: [proposals[0]!] } })
+    const wrapper = await mountSuspended(ProposalCardStack, {
+      props: { proposals: [proposals[0]!] }
+    })
     const rows = wrapper.findAll('li')
 
     expect(rows).toHaveLength(3)
@@ -59,6 +67,17 @@ describe('ProposalCardStack', () => {
       expect(row.classes()).toContain('flex-1')
     }
   })
+
+  it('keeps the save button interactive while the saved-proposals store initializes', async () => {
+    const wrapper = await mountSuspended(ProposalCardStack, {
+      props: { proposals: [proposals[0]!] }
+    })
+
+    expect((wrapper.get('[aria-label="收藏提案"]').element as HTMLButtonElement).disabled).toBe(
+      false
+    )
+  })
+
   it('renders up to three real proposal cards and switches the active card', async () => {
     const wrapper = await mountSuspended(ProposalCardStack, {
       props: { proposals }
@@ -69,12 +88,22 @@ describe('ProposalCardStack', () => {
     expect(wrapper.findAll('[data-proposal-card][data-active="false"]')[0]?.text()).toBe('')
     const imagePlaceholder = wrapper.find('[data-proposal-card-image]')
     expect(imagePlaceholder.exists()).toBe(true)
-    expect(wrapper.find('[data-cover-source]').attributes('data-cover-source')).toBe('upload-fallback')
+    expect(wrapper.find('[data-cover-source]').attributes('data-cover-source')).toBe(
+      'upload-fallback'
+    )
     expect(wrapper.findAll('[data-proposal-card-depth]')).toHaveLength(2)
     expect(wrapper.find('[data-proposal-card][data-active="true"]').classes()).toContain('z-30')
-    expect(wrapper.findAll('[data-proposal-card][data-active="false"]')[0]?.classes()).toContain('z-20')
-    expect(wrapper.find('[data-proposal-card][data-active="true"] .proposal-card-cover__perspective').exists()).toBe(false)
-    expect(wrapper.find('[data-proposal-card][data-active="true"] .proposal-card-location').classes()).toContain('rounded-full')
+    expect(wrapper.findAll('[data-proposal-card][data-active="false"]')[0]?.classes()).toContain(
+      'z-20'
+    )
+    expect(
+      wrapper
+        .find('[data-proposal-card][data-active="true"] .proposal-card-cover__perspective')
+        .exists()
+    ).toBe(false)
+    expect(
+      wrapper.find('[data-proposal-card][data-active="true"] .proposal-card-location').classes()
+    ).toContain('rounded-full')
 
     await wrapper.get('[aria-label="提案分頁"] button:nth-child(2)').trigger('click')
 

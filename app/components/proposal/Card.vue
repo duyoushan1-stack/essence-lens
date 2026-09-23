@@ -7,7 +7,6 @@ const props = defineProps<{
   fallbackImageUrl?: string | null
 }>()
 
-const isFavorite = ref(false)
 const coverUrl = computed(() => props.proposal.cover.imageUrl ?? props.fallbackImageUrl ?? null)
 const coverPosition = computed(() => ['center', '65% center', '35% center'][props.index % 3])
 
@@ -52,6 +51,7 @@ const hasLocation = computed(() => Boolean(props.proposal.location?.externalUrl)
       :style="coverUrl ? { '--cover-image': `url(${coverUrl})` } : undefined"
       data-proposal-card-image
     >
+      <!-- prettier-ignore -->
       <img
         v-if="coverUrl"
         :src="coverUrl"
@@ -62,29 +62,25 @@ const hasLocation = computed(() => Boolean(props.proposal.location?.externalUrl)
         decoding="async"
         aria-hidden="true"
       >
-      <div v-if="coverUrl" class="proposal-card-cover__blur absolute inset-0 z-[1]" aria-hidden="true" />
+      <div
+        v-if="coverUrl"
+        class="proposal-card-cover__blur absolute inset-0 z-[1]"
+        aria-hidden="true"
+      />
 
-      <div class="relative z-[4] flex items-center justify-between gap-3 px-3 py-3 text-[0.62rem] uppercase tracking-[0.16em] text-white/90">
+      <div
+        class="relative z-[4] flex items-center justify-between gap-3 px-3 py-3 text-[0.62rem] uppercase tracking-[0.16em] text-white/90"
+      >
         <span class="inline-flex items-center gap-2">
           <span>PROPOSAL {{ String(index + 1).padStart(2, '0') }}</span>
         </span>
-        <button
-          type="button"
-          class="inline-flex size-8 cursor-pointer items-center justify-center rounded-full border border-white/65 bg-white/15 text-white backdrop-blur-md transition hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-white"
-          :aria-label="isFavorite ? '取消收藏提案' : '收藏提案'"
-          :aria-pressed="isFavorite"
-          @click.stop="isFavorite = !isFavorite"
-        >
-          <Icon
-            :name="isFavorite ? 'line-md:heart-filled' : 'line-md:heart'"
-            size="18"
-            aria-hidden="true"
-          />
-        </button>
+        <ProposalSaveButton :proposal="proposal" :fallback-image-url="fallbackImageUrl" />
       </div>
 
       <div class="absolute inset-x-4 bottom-4 z-[4]">
-        <h2 class="max-w-60 overflow-wrap-anywhere text-[clamp(1.15rem,1.8vw,1.55rem)] font-semibold leading-[1.08] tracking-[-0.045em] text-white">
+        <h2
+          class="max-w-60 overflow-wrap-anywhere text-[clamp(1.15rem,1.8vw,1.55rem)] font-semibold leading-[1.08] tracking-[-0.045em] text-white"
+        >
           {{ proposal.title }}
         </h2>
         <p class="mt-2 line-clamp-2 max-w-70 text-sm leading-[1.5] text-white/85">
@@ -101,7 +97,9 @@ const hasLocation = computed(() => Boolean(props.proposal.location?.externalUrl)
           class="flex flex-1 flex-col justify-center border-b border-[#437065]/20 px-0.5 py-1.5 text-base last:border-b-0"
           :class="dayToneClass"
         >
-          <div class="grid min-h-9 grid-cols-[1.45rem_2.35rem_minmax(0,1fr)_2rem] items-center gap-1">
+          <div
+            class="grid min-h-9 grid-cols-[1.45rem_2.35rem_minmax(0,1fr)_2rem] items-center gap-1"
+          >
             <Icon :name="item.icon" size="20" aria-hidden="true" />
             <span class="font-semibold">{{ item.label }}</span>
             <strong class="min-w-0 text-sm font-medium leading-snug text-ink">
@@ -120,7 +118,9 @@ const hasLocation = computed(() => Boolean(props.proposal.location?.externalUrl)
               @pointerdown.stop
             >
               <Icon
-                :name="isItineraryExpanded(item.key) ? 'line-md:chevron-up' : 'line-md:chevron-down'"
+                :name="
+                  isItineraryExpanded(item.key) ? 'line-md:chevron-up' : 'line-md:chevron-down'
+                "
                 size="20"
                 aria-hidden="true"
               />
@@ -135,7 +135,9 @@ const hasLocation = computed(() => Boolean(props.proposal.location?.externalUrl)
             :aria-labelledby="`proposal-${proposal.id}-${item.key}-toggle`"
           >
             <div class="min-h-0 overflow-hidden">
-              <p class="mb-0 ml-[calc(1.45rem+2.35rem+0.5rem)] pr-8 text-sm leading-relaxed text-muted">
+              <p
+                class="mb-0 ml-[calc(1.45rem+2.35rem+0.5rem)] pr-8 text-sm leading-relaxed text-muted"
+              >
                 {{ proposal.itinerary[item.key].description }}
               </p>
             </div>
