@@ -54,7 +54,7 @@ const removeFile = async () => {
 
 <template>
   <main
-    class="flex min-h-screen items-center px-6 py-10 text-ink sm:px-10 sm:py-16 lg:px-16 lg:py-20"
+    class="flex min-h-[100dvh] items-center px-6 pb-32 pt-24 text-ink sm:px-10 sm:pb-32 sm:pt-24 md:px-10 md:pb-16 md:pt-16 lg:px-16 lg:py-20"
   >
     <ProposalFlowStage
       :status="flowStatus"
