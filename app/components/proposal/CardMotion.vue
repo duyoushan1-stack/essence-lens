@@ -11,11 +11,7 @@ const emit = defineEmits<{
 const cardElement = ref<HTMLElement | null>(null)
 useProposalCardMotion(cardElement, toRef(props, 'active'), toRef(props, 'offset'))
 
-const cardClass = computed(() =>
-  props.active
-    ? 'text-ink'
-    : 'text-transparent'
-)
+const cardClass = computed(() => (props.active ? 'text-ink' : 'text-transparent'))
 
 const stackLayerClass = computed(() => {
   if (props.active) return 'z-30'
@@ -57,7 +53,9 @@ const handleKeydown = (event: KeyboardEvent) => {
         data-proposal-card-depth
         aria-hidden="true"
       >
-        <div class="absolute inset-0 bg-gradient-to-br from-white/45 via-transparent to-[#7b9f98]/20" />
+        <div
+          class="absolute inset-0 bg-gradient-to-br from-white/45 via-transparent to-[#7b9f98]/20"
+        />
       </div>
 
       <Transition name="proposal-card-content" mode="out-in">

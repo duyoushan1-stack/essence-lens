@@ -1,11 +1,7 @@
 import type { Proposal as ProposalSchemaType } from '../schemas/proposal'
 
 /** 單筆生成提案的內容，實際 contract 由 shared schema 統一驗證。 */
-export type {
-  ProposalActivity,
-  ProposalItinerary,
-  ProposalPerspective
-} from '../schemas/proposal'
+export type { ProposalActivity, ProposalItinerary, ProposalPerspective } from '../schemas/proposal'
 export type Proposal = ProposalSchemaType
 
 /** 後端在圖片通過可行性檢查後建立的生成輸入，不由前端提交。 */
@@ -38,10 +34,7 @@ export type ProposalErrorCode =
   | 'server-failure' // Server 發生未預期的內部錯誤
 
 /** 僅供 development debug 使用的安全 Provider 資訊，不包含原始錯誤訊息或 payload。 */
-export type ProposalProviderStage =
-  | 'semantic-analysis'
-  | 'grounding'
-  | 'proposal-generation'
+export type ProposalProviderStage = 'semantic-analysis' | 'grounding' | 'proposal-generation'
 
 export interface ProposalValidationIssue {
   path: string

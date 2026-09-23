@@ -23,7 +23,11 @@
         </div>
 
         <div class="mt-7 space-y-3">
-          <div v-for="row in 3" :key="row" class="flex items-center gap-4 border-b border-border/70 pb-3">
+          <div
+            v-for="row in 3"
+            :key="row"
+            class="flex items-center gap-4 border-b border-border/70 pb-3"
+          >
             <span class="proposal-skeleton-shimmer h-4 w-14 shrink-0 rounded-full" />
             <span class="proposal-skeleton-shimmer h-4 flex-1 rounded-full" />
           </div>
