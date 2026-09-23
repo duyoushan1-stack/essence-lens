@@ -1,7 +1,4 @@
-import type {
-  GenerateProposalImage,
-  GeneratedProposalImage
-} from '../provider.types'
+import type { GenerateProposalImage, GeneratedProposalImage } from '../provider.types'
 
 const DEFAULT_BASE_URL = 'https://apihub.agnes-ai.com'
 const IMAGE_GENERATION_PATH = '/v1/images/generations'

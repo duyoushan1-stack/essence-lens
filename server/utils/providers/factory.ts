@@ -72,7 +72,8 @@ export const getProposalService = (): ProposalService => {
           },
           geminiApiKey: config.geminiApiKey,
           geminiSemanticModel: config.geminiSemanticModel,
-          geminiGroundingModel: config.geminiGroundingModel || config.geminiProposalModel || config.geminiSemanticModel,
+          geminiGroundingModel:
+            config.geminiGroundingModel || config.geminiProposalModel || config.geminiSemanticModel,
           geminiProposalModel: config.geminiProposalModel || config.geminiSemanticModel,
           agnesApiKey: config.agnesApiKey,
           agnesImageModel: config.agnesImageModel || 'agnes-image-2.5-flash',

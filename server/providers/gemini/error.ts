@@ -1,7 +1,4 @@
-import type {
-  ProposalProviderStage,
-  ProposalValidationIssue
-} from '../../../shared/types/proposal'
+import type { ProposalProviderStage, ProposalValidationIssue } from '../../../shared/types/proposal'
 
 interface UnknownRecord {
   [key: string]: unknown

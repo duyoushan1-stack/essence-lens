@@ -1,7 +1,4 @@
-import type {
-  ProposalProviderStage,
-  ProposalValidationIssue
-} from '../../../shared/types/proposal'
+import type { ProposalProviderStage, ProposalValidationIssue } from '../../../shared/types/proposal'
 
 /** Provider 例外經過正規化後的分類，供 retry policy 與 API error mapping 使用。 */
 export type ProviderErrorKind =
@@ -84,11 +81,7 @@ const getProviderCode = (error: UnknownRecord): string | null => {
 const getProviderStage = (error: UnknownRecord): ProposalProviderStage | undefined => {
   const stage = error.stage
 
-  if (
-    stage === 'semantic-analysis' ||
-    stage === 'grounding' ||
-    stage === 'proposal-generation'
-  ) {
+  if (stage === 'semantic-analysis' || stage === 'grounding' || stage === 'proposal-generation') {
     return stage
   }
 
