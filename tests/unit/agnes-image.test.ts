@@ -58,9 +58,11 @@ describe('createAgnesImageProvider', () => {
   })
 
   it('rejects an HTTP failure without exposing the response body', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response('private provider error', { status: 502, statusText: 'Bad Gateway' })
-    )
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response('private provider error', { status: 502, statusText: 'Bad Gateway' })
+      )
     vi.stubGlobal('fetch', fetchMock)
 
     const generateImage = createAgnesImageProvider({
@@ -79,9 +81,11 @@ describe('createAgnesImageProvider', () => {
   })
 
   it('rejects a response without a public image URL', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ data: [{ b64_json: 'raw-image-data' }] }), { status: 200 })
-    )
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ data: [{ b64_json: 'raw-image-data' }] }), { status: 200 })
+      )
     vi.stubGlobal('fetch', fetchMock)
 
     const generateImage = createAgnesImageProvider({

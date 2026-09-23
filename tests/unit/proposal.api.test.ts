@@ -52,7 +52,11 @@ const filePart: MultipartPart = {
   type: 'image/jpeg'
 }
 
-const createProposal = (id = 'proposal-1', title = '午後散步與咖啡', summary = '到附近街區散步。'): Proposal => ({
+const createProposal = (
+  id = 'proposal-1',
+  title = '午後散步與咖啡',
+  summary = '到附近街區散步。'
+): Proposal => ({
   id,
   title,
   summary,
@@ -277,7 +281,11 @@ describe('POST /api/proposal', () => {
           hasPetCloseup: 'absent' as const,
           isMemeLike: 'absent' as const
         },
-        quality: { blur: 'none' as const, isSolidColor: 'absent' as const, informationSufficient: true },
+        quality: {
+          blur: 'none' as const,
+          isSolidColor: 'absent' as const,
+          informationSufficient: true
+        },
         safety: {
           nudity: 'absent' as const,
           sexual: 'absent' as const,

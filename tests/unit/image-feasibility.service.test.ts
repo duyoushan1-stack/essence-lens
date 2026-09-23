@@ -77,10 +77,14 @@ describe('evaluateImageFeasibilityForFile', () => {
     })
     const analyzeSemantics = vi.fn().mockResolvedValue(clearSemanticAnalysis)
 
-    const result = await evaluateImageFeasibilityForFile(input, {
-      analyzeSafety,
-      analyzeSemantics
-    }, { includeDebug: true })
+    const result = await evaluateImageFeasibilityForFile(
+      input,
+      {
+        analyzeSafety,
+        analyzeSemantics
+      },
+      { includeDebug: true }
+    )
 
     expect(result).toEqual({
       status: 'rejected',
@@ -93,10 +97,14 @@ describe('evaluateImageFeasibilityForFile', () => {
     const analyzeSafety = vi.fn().mockRejectedValue(new Error('provider unavailable'))
     const analyzeSemantics = vi.fn()
 
-    const result = await evaluateImageFeasibilityForFile(input, {
-      analyzeSafety,
-      analyzeSemantics
-    }, { includeDebug: true })
+    const result = await evaluateImageFeasibilityForFile(
+      input,
+      {
+        analyzeSafety,
+        analyzeSemantics
+      },
+      { includeDebug: true }
+    )
 
     expect(result).toEqual({
       status: 'error',
@@ -114,10 +122,14 @@ describe('evaluateImageFeasibilityForFile', () => {
     })
     const analyzeSemantics = vi.fn()
 
-    const result = await evaluateImageFeasibilityForFile(input, {
-      analyzeSafety,
-      analyzeSemantics
-    }, { includeDebug: true })
+    const result = await evaluateImageFeasibilityForFile(
+      input,
+      {
+        analyzeSafety,
+        analyzeSemantics
+      },
+      { includeDebug: true }
+    )
 
     expect(result).toEqual({
       status: 'error',
@@ -137,10 +149,14 @@ describe('evaluateImageFeasibilityForFile', () => {
     const analyzeSafety = vi.fn().mockRejectedValue({ code: 'malformed-response' })
     const analyzeSemantics = vi.fn()
 
-    const result = await evaluateImageFeasibilityForFile(input, {
-      analyzeSafety,
-      analyzeSemantics
-    }, { includeDebug: true })
+    const result = await evaluateImageFeasibilityForFile(
+      input,
+      {
+        analyzeSafety,
+        analyzeSemantics
+      },
+      { includeDebug: true }
+    )
 
     expect(result).toEqual({
       status: 'error',
