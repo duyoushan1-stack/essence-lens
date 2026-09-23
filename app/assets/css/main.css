@@ -10,16 +10,32 @@
   --color-danger: oklch(48% 0.11 35);
 }
 
-:root {
-  color-scheme: light;
-}
-
 body {
   background-image: url('/background.webp');
   background-color: rgba(243, 245, 242, 0.7);
   background-blend-mode: lighten;
   background-size: cover;
   color: var(--color-ink);
+}
+
+button:not(:disabled),
+select,
+[role='button'] {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+input[type='search']::-webkit-search-cancel-button {
+  display: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type='search']::-ms-clear {
+  display: none;
 }
 
 :root {
