@@ -1,10 +1,29 @@
 <script setup lang="ts">
 const savedProposals = useSavedProposalsStore()
+const isScrolled = ref(false)
+
+const updateScrollState = () => {
+  isScrolled.value = window.scrollY > 0
+}
+
+onMounted(() => {
+  updateScrollState()
+  window.addEventListener('scroll', updateScrollState, { passive: true })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', updateScrollState)
+})
 </script>
 
 <template>
   <nav
-    class="fixed inset-x-6 top-6 z-40 hidden items-center gap-1 text-sm text-ink md:flex"
+    class="fixed left-1/2 max-w-5xl top-6 z-40  hidden -translate-x-1/2 items-center gap-1 text-sm text-ink transition-all duration-300 md:flex"
+    :class="
+      isScrolled
+        ? 'w-[calc(100%_-_4rem)] py-1.5 rounded-2xl border border-white/75 bg-white/62 shadow-[0_0.75rem_2rem_rgba(44,85,82,0.08)] backdrop-blur-md lg:px-5'
+        : 'w-[calc(100%_-_3rem)] border-0 border-transparent'
+    "
     aria-label="主要導覽"
   >
     <NuxtLink
