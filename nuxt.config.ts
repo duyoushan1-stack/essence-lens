@@ -16,7 +16,7 @@ export default defineNuxtConfig({
     agnesImageModel: 'agnes-image-2.5-flash',
     agnesApiBaseUrl: 'https://apihub.agnes-ai.com'
   },
-  modules: ['@nuxt/eslint', '@nuxt/icon', '@nuxt/test-utils/module'],
+  modules: ['@nuxt/eslint', '@nuxt/icon', '@pinia/nuxt', '@nuxt/test-utils/module'],
   css: ['~/assets/css/main.css'],
   vite: {
     plugins: [tailwindcss()]
