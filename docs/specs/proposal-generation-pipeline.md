@@ -73,14 +73,14 @@ export interface ProposalLocationHint {
 
 ### 4.1 Responsibility boundaries
 
-| Layer | Responsibility |
-| --- | --- |
-| Provider | 將 Domain input 轉成 SDK request，驗證 SDK response，轉換 Provider error |
-| `image-feasibility.service.ts` | 技術檢查、Azure Content Safety、Gemini semantic analysis、Essence Lens Policy |
-| `proposal.service.ts` | 編排 Grounding、Proposal 生成、封面生成與最終 Domain mapping |
-| `server/utils/providers/factory.ts` | 讀取 Runtime Config、建立 Client、組裝 Real／Mock dependencies |
-| `shared/schemas` | 定義需要跨 Server／Client 使用的 canonical schema |
-| `Card.vue` | 顯示 Proposal、fallback cover、行程、地點連結與收藏 UI state |
+| Layer                               | Responsibility                                                                |
+| ----------------------------------- | ----------------------------------------------------------------------------- |
+| Provider                            | 將 Domain input 轉成 SDK request，驗證 SDK response，轉換 Provider error      |
+| `image-feasibility.service.ts`      | 技術檢查、Azure Content Safety、Gemini semantic analysis、Essence Lens Policy |
+| `proposal.service.ts`               | 編排 Grounding、Proposal 生成、封面生成與最終 Domain mapping                  |
+| `server/utils/providers/factory.ts` | 讀取 Runtime Config、建立 Client、組裝 Real／Mock dependencies                |
+| `shared/schemas`                    | 定義需要跨 Server／Client 使用的 canonical schema                             |
+| `Card.vue`                          | 顯示 Proposal、fallback cover、行程、地點連結與收藏 UI state                  |
 
 Provider 不直接決定整條產品流程，不直接操作 UI，也不呼叫 `useRuntimeConfig()`。
 
@@ -144,17 +144,11 @@ Provider 只接收已建立的 Client 與自身設定，不讀取 Runtime Config
 ### 5.2 Provider functions
 
 ```ts
-export type AnalyzeSemantics = (
-  input: ProviderImageInput
-) => Promise<ImageSemanticAnalysis>
+export type AnalyzeSemantics = (input: ProviderImageInput) => Promise<ImageSemanticAnalysis>
 
-export type GroundLocations = (
-  input: GroundLocationsInput
-) => Promise<GroundedLocation[]>
+export type GroundLocations = (input: GroundLocationsInput) => Promise<GroundedLocation[]>
 
-export type GenerateProposal = (
-  input: ProposalGenerationContext
-) => Promise<ProposalDraft[]>
+export type GenerateProposal = (input: ProposalGenerationContext) => Promise<ProposalDraft[]>
 
 export type GenerateProposalImage = (
   input: GenerateProposalImageInput
@@ -166,8 +160,7 @@ export type GenerateProposalImage = (
 ### 5.3 Provider dependencies
 
 ```ts
-export interface ProposalProviderDependencies
-  extends ImageFeasibilityServiceDependencies {
+export interface ProposalProviderDependencies extends ImageFeasibilityServiceDependencies {
   groundLocations: GroundLocations
   generateProposal: GenerateProposal
   generateProposalImage: GenerateProposalImage
@@ -391,16 +384,16 @@ return {
 
 ## 10. Error handling and degradation
 
-| 階段 | 行為 |
-| --- | --- |
-| 技術驗證失敗 | `rejected`，回傳產品可顯示原因 |
-| Azure Safety 拒絕 | `rejected`，不呼叫後續 Gemini |
-| Analysis 失敗 | `error`，不進入 Proposal Generation |
-| Policy 拒絕 | `rejected`，回傳整理後 reason code |
-| Grounding 失敗 | 記錄安全的 provider debug，降級成無特定地點提案 |
-| Proposal schema invalid | `error`，不回傳未驗證資料 |
-| 單張封面失敗 | 保留文字 Proposal，該卡 cover 為 `failed` |
-| 全部封面失敗 | 仍回傳文字 Proposal，Client 使用 fallback cover |
+| 階段                    | 行為                                            |
+| ----------------------- | ----------------------------------------------- |
+| 技術驗證失敗            | `rejected`，回傳產品可顯示原因                  |
+| Azure Safety 拒絕       | `rejected`，不呼叫後續 Gemini                   |
+| Analysis 失敗           | `error`，不進入 Proposal Generation             |
+| Policy 拒絕             | `rejected`，回傳整理後 reason code              |
+| Grounding 失敗          | 記錄安全的 provider debug，降級成無特定地點提案 |
+| Proposal schema invalid | `error`，不回傳未驗證資料                       |
+| 單張封面失敗            | 保留文字 Proposal，該卡 cover 為 `failed`       |
+| 全部封面失敗            | 仍回傳文字 Proposal，Client 使用 fallback cover |
 
 Gemini-specific error parsing 留在 `server/providers/gemini/error.ts`；跨 Provider mapping 繼續使用 `server/utils/providers/error.ts`。
 

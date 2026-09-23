@@ -67,8 +67,8 @@ app/
 | `index.vue`               | 組合既有 flow state、事件與 slots，不直接操作動畫 DOM                         |
 | `ProposalFlowStage.vue`   | 提供 intro、image、status/result slots，依 flow state 選擇 layout class       |
 | `useProposalAnimation.ts` | 封裝 View Transition、fallback、reduced-motion 與 active transition cleanup   |
-| `ProposalCardStack.vue`   | 限制最多三筆資料，管理 active card、堆疊位置與 Pagination 切換               |
-| `ProposalSkeleton.vue`    | 顯示 pending 期間的 Proposal card 結構 placeholder，不建立 Proposal data       |
+| `ProposalCardStack.vue`   | 限制最多三筆資料，管理 active card、堆疊位置與 Pagination 切換                |
+| `ProposalSkeleton.vue`    | 顯示 pending 期間的 Proposal card 結構 placeholder，不建立 Proposal data      |
 | `ProposalCard.vue`        | 管理單張卡片的 translate、rotate、scale、opacity 與 reduced-motion transition |
 | `ImagePreview.vue`        | 顯示預覽、檔案資訊與更換/生成/移除操作列                                      |
 | `ProposalResultPanel.vue` | 顯示 pending、rejected、error 與 success 內容                                 |
@@ -253,22 +253,22 @@ Success contract 使用 `Proposal[]`，最多回傳三張真實 proposal；這�
 
 ## 12. 測試情境
 
-| Case | 預期                                                                         |
-| ---- | ---------------------------------------------------------------------------- |
-| A-01 | `ready → pending`：intro 淡出、preview 進入 focused layout、pending 文案出現 |
-| A-02 | `pending → success`：不重跑主要位移，只替換為 card stack                      |
-| A-03 | `pending → rejected/error`：顯示正確內容，不顯示過期 proposal                |
-| A-04 | 換圖：中止舊 transition，回到 initial，無殘留 reference/class/timer          |
-| A-05 | 移除圖片：先完成 initial layout 回程轉場，再卸載 preview，不觸發卸載後更新   |
-| A-06 | retry：保持 focused，清除舊內容並顯示 pending                                |
-| A-07 | reduced-motion：不執行位移與 View Transition，內容仍正常顯示                 |
-| A-08 | 不支援 View Transition：fallback 仍可完成 layout 與結果顯示                  |
+| Case | 預期                                                                                   |
+| ---- | -------------------------------------------------------------------------------------- |
+| A-01 | `ready → pending`：intro 淡出、preview 進入 focused layout、pending 文案出現           |
+| A-02 | `pending → success`：不重跑主要位移，只替換為 card stack                               |
+| A-03 | `pending → rejected/error`：顯示正確內容，不顯示過期 proposal                          |
+| A-04 | 換圖：中止舊 transition，回到 initial，無殘留 reference/class/timer                    |
+| A-05 | 移除圖片：先完成 initial layout 回程轉場，再卸載 preview，不觸發卸載後更新             |
+| A-06 | retry：保持 focused，清除舊內容並顯示 pending                                          |
+| A-07 | reduced-motion：不執行位移與 View Transition，內容仍正常顯示                           |
+| A-08 | 不支援 View Transition：fallback 仍可完成 layout 與結果顯示                            |
 | A-09 | 一至三張 proposal 維持 card stack，Pagination 可切換 active card，資料不足時不複製卡片 |
-| A-10 | pending 期間操作列全部 disabled，不能觸發第二個 request                      |
-| A-11 | client 檔案驗證失敗：停留 initial layout，只顯示檔案錯誤文字，不播放位移動畫 |
-| A-12 | pending 期間顯示 Proposal skeleton，不顯示假的 Proposal 或過期結果            |
-| A-13 | pending 結束後 skeleton 正確替換成 success、rejected 或 error 內容             |
-| A-14 | reduced-motion 時 skeleton 保持靜態，不播放 pulse 或 shimmer                   |
+| A-10 | pending 期間操作列全部 disabled，不能觸發第二個 request                                |
+| A-11 | client 檔案驗證失敗：停留 initial layout，只顯示檔案錯誤文字，不播放位移動畫           |
+| A-12 | pending 期間顯示 Proposal skeleton，不顯示假的 Proposal 或過期結果                     |
+| A-13 | pending 結束後 skeleton 正確替換成 success、rejected 或 error 內容                     |
+| A-14 | reduced-motion 時 skeleton 保持靜態，不播放 pulse 或 shimmer                           |
 
 ## 13. 驗收條件
 

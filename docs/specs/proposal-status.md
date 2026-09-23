@@ -438,7 +438,7 @@ MVP 明確接受以下限制：
 | E-10 | pending 期間再次點擊             | 只送出一個 HTTP request                                                |
 | E-11 | rejected 後 retry 同一張圖片     | UI 不提供此操作，只能更換圖片                                          |
 | E-12 | pending 期間等待 Proposal        | 顯示 Skeleton，不顯示假的或過期的 Proposal                             |
-| E-13 | pending 結束                      | Skeleton 只被 success、rejected 或 error 內容取代                       |
+| E-13 | pending 結束                     | Skeleton 只被 success、rejected 或 error 內容取代                      |
 
 ## 12. 最小案例驗證
 
