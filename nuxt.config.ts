@@ -16,6 +16,9 @@ export default defineNuxtConfig({
     agnesImageModel: 'agnes-image-2.5-flash',
     agnesApiBaseUrl: 'https://apihub.agnes-ai.com'
   },
+  app: {
+    pageTransition: { name: 'page', mode: 'out-in' }
+  },
   modules: ['@nuxt/eslint', '@nuxt/icon', '@pinia/nuxt', '@nuxt/test-utils/module'],
   css: ['~/assets/css/main.css'],
   vite: {

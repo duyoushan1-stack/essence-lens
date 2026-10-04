@@ -9,13 +9,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <NuxtRouteAnnouncer />
-  <LayoutFloatingNav />
-  <BaseToast
-    :message="savedProposals.error"
-    :retryable="savedProposals.status === 'error'"
-    @retry="savedProposals.load"
-    @dismiss="savedProposals.dismissError"
-  />
-  <NuxtPage />
+  <div>
+    <NuxtRouteAnnouncer />
+    <LayoutFloatingNav />
+    <BaseToast
+      :message="savedProposals.error"
+      :retryable="savedProposals.status === 'error'"
+      @retry="savedProposals.load"
+      @dismiss="savedProposals.dismissError"
+    />
+    <NuxtPage />
+  </div>
 </template>

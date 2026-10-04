@@ -51,6 +51,18 @@ input[type='search']::-ms-clear {
   --proposal-skeleton-duration: 2.4s;
 }
 
+/* 換頁過渡 */
+.page-enter-active,
+.page-leave-active {
+  transition: all 0.3s;
+}
+
+.page-enter-from,
+.page-leave-to {
+  opacity: 0.15;
+  filter: blur(0.4rem);
+}
+
 .proposal-card-cover__blur {
   z-index: 1;
   background-image: var(--cover-image);
