@@ -18,7 +18,7 @@ onBeforeUnmount(() => {
 
 <template>
   <nav
-    class="fixed left-1/2 max-w-5xl top-6 z-40  hidden -translate-x-1/2 items-center gap-1 text-sm text-ink transition-all duration-300 md:flex"
+    class="fixed left-1/2 max-w-5xl top-6 z-40 hidden -translate-x-1/2 items-center gap-1 text-sm text-ink transition-all duration-300 md:flex"
     :class="
       isScrolled
         ? 'w-[calc(100%_-_4rem)] py-1.5 rounded-2xl border border-white/75 bg-white/62 shadow-[0_0.75rem_2rem_rgba(44,85,82,0.08)] backdrop-blur-md lg:px-5'

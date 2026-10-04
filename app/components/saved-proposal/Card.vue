@@ -31,7 +31,7 @@ const openDetails = (event: MouseEvent) => {
     class="group overflow-hidden rounded-2xl border border-white/80 bg-white/78 shadow-[0_1rem_2.5rem_rgba(44,85,82,0.08)] backdrop-blur-sm max-md:flex max-md:items-stretch"
   >
     <div
-      class="relative aspect-[1.65/1] overflow-hidden bg-[#dce8e2] max-md:aspect-auto max-md:w-25 max-md:shrink-0"
+      class="relative aspect-[1.65/1] overflow-hidden bg-[#dce8e2] max-md:aspect-auto max-md:w-30 max-md:shrink-0"
     >
       <button
         v-if="coverUrl"

@@ -135,10 +135,10 @@ const removeRecord = async (proposalId: string) => {
       <section class="mt-8" aria-live="polite" :aria-busy="savedProposals.status === 'loading'">
         <div
           v-if="savedProposals.status === 'loading'"
-          class="grid gap-5 md:grid-cols-2 lg:grid-cols-3"
+          class="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
           <div
-            v-for="index in 3"
+            v-for="index in 4"
             :key="index"
             class="aspect-[1.15/1] animate-pulse rounded-2xl bg-white/55"
           />
@@ -191,7 +191,7 @@ const removeRecord = async (proposalId: string) => {
             清除篩選
           </button>
         </div>
-        <div v-else class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div v-else class="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <SavedProposalCard
             v-for="record in filteredRecords"
             :key="record.proposal.id"
